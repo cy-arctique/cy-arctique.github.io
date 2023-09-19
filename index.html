@@ -126,7 +126,192 @@
 <div class="row">
 	<div class="col-md-8">
 		<h3 class="title">
-			<a href="/2023/08/24/Rust学习笔记/" >Rust学习笔记</a>
+			<a href="/2023/09/04/Tokio随记/" >Tokio随记</a>
+		</h3>
+		</div>
+	<div class="col-md-4">
+		<div class="date">post @ 2023-09-04  </div>
+		</div>
+	</div>
+	
+
+
+			<div class="entry">
+  <div class="row">
+	
+	
+		<h2 id="设置学习环境"><a href="#设置学习环境" class="headerlink" title="设置学习环境"></a>设置学习环境</h2><h3 id="mini-redis"><a href="#mini-redis" class="headerlink" title="mini-redis"></a>mini-redis</h3><p>安装<code>mini-redis</code> 服务器</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">cargo</span> <span class="token function">install</span> mini-redis<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<p>通过启动服务器来确保它已经安装</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">mini-redis-server<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<p>在单独的终端窗口中，尝试使用以下命令获取密钥<code>mini-redis-cli</code></p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">mini-redis-cli <span class="token builtin class-name">set</span> foo <span class="token number">1</span>
+mini-redis-cli get foo<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+
+<h2 id="Hello-world"><a href="#Hello-world" class="headerlink" title="Hello world"></a>Hello world</h2><pre class="line-numbers language-Rust" data-language="Rust"><code class="language-Rust">use mini_redis::&#123;client, Result&#125;;
+
+#[tokio::main]
+async fn main() -&gt; Result&lt;()&gt; &#123;
+    &#x2F;&#x2F; 建立与mini-redis服务器的连接
+    let mut client &#x3D; client::connect(&quot;127.0.0.1:6379&quot;).await?;
+
+    &#x2F;&#x2F; 设置 key: &quot;hello&quot; 和 值: &quot;world&quot;
+    client.set(&quot;hello&quot;, &quot;world&quot;.into()).await?;
+
+    &#x2F;&#x2F; 获取&quot;key&#x3D;hello&quot;的值
+    let result &#x3D; client.get(&quot;hello&quot;).await?;
+
+    println!(&quot;从服务器端获取到结果&#x3D;&#123;:?&#125;&quot;, result);
+
+    Ok(())
+&#125;<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p><code>client::connect</code> 函数由<code>mini-redis</code> 包提供，它使用异步的方式跟指定的远程<code>IP</code> 地址建立 TCP 长连接，一旦连接建立成功，那 client 的赋值初始化也将完成</p>
+<p>特别值得注意的是：虽然该连接是异步建立的，但是从代码本身来看，完全是同步的代码编写方式，唯一能说明异步的点就是<code>.await</code></p>
+<p>在上例中，<code>redis</code> 的连接函数 <code>connect</code> 实现如上，它看上去很像是一个同步函数，但是 <code>async fn</code> 出卖了它。 <code>async fn</code> 异步函数并不会直接返回值，而是返回一个 <code>Future</code>，顾名思义，该 <code>Future</code> 会在未来某个时间点被执行，然后最终获取到真实的返回值 <code>Result&lt;Client&gt;</code></p>
+<p>由于 <code>async</code> 会返回一个 <code>Future</code>，因此我们还需要配合使用 <code>.await</code> 来让该 <code>Future</code> 运行起来，最终获得返回值:</p>
+<pre class="line-numbers language-Rust" data-language="Rust"><code class="language-Rust">async fn say_to_world() -&gt; String &#123;
+    String::from(&quot;world&quot;)
+&#125;
+
+#[tokio::main]
+async fn main() &#123;
+    &#x2F;&#x2F; 此处的函数调用是惰性的，并不会执行 &#96;say_to_world()&#96; 函数体中的代码
+    let op &#x3D; say_to_world();
+
+    &#x2F;&#x2F; 首先打印出 &quot;hello&quot;
+    println!(&quot;hello&quot;);
+
+    &#x2F;&#x2F; 使用 &#96;.await&#96; 让 &#96;say_to_world&#96; 开始运行起来
+    println!(&quot;&#123;&#125;&quot;, op.await);
+&#125;<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p><code>async fn</code> 到底返回什么？它实际上返回的是一个实现了 <code>Future</code> 特征的匿名类型: <code>impl Future&lt;Output = String&gt;</code></p>
+<h3 id="async-main"><a href="#async-main" class="headerlink" title="async main"></a>async main</h3><p>在代码中，使用了一个与众不同的<code>main</code> 函数：<code>async fn main</code>，而且是用<code>#[tokio::main]</code> 属性进行了标记。异步<code>main</code> 函数有以下意义：</p>
+<ul>
+<li><code>.await</code> 只能在<code>async</code> 函数中使用，如果是以前的<code>fn main</code>，那它内部是无法直接使用<code>async</code> 函数的。这个会极大地限制了我们的使用场景</li>
+<li>异步运行时本身需要初始化</li>
+</ul>
+<p>因此<code>#[tokio::main]</code> 宏将<code>async fn main()</code> 隐式的转换为<code>fn main()</code> 的同时还对整个异步运行时进行了初始化：</p>
+<pre class="line-numbers language-Rust" data-language="Rust"><code class="language-Rust">#[tokio::main]
+async fn main() &#123;
+    println!(&quot;hello&quot;);
+&#125;
+&#x2F;&#x2F; 将被转换成：
+fn main() &#123;
+    let mut rt &#x3D; tokio::runtime::Runtime::new().unwrap();
+    rt.block_on(async &#123;
+        println!(&quot;hello&quot;);
+    &#125;)
+&#125;<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<h3 id="cargo-feature"><a href="#cargo-feature" class="headerlink" title="cargo feature"></a>cargo feature</h3><p>在引入 <code>tokio</code> 包时，我们在 <code>Cargo.toml</code> 文件中添加了这么一行:</p>
+<pre class="line-numbers language-toml" data-language="toml"><code class="language-toml"><span class="token key property">tokio</span> <span class="token punctuation">=</span> <span class="token punctuation">&#123;</span> <span class="token key property">version</span> <span class="token punctuation">=</span> <span class="token string">"1"</span><span class="token punctuation">,</span> <span class="token key property">features</span> <span class="token punctuation">=</span> <span class="token punctuation">[</span><span class="token string">"full"</span><span class="token punctuation">]</span> <span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<p>里面有个 <code>features = [&quot;full&quot;]</code> 可能大家会比较迷惑，当然，关于它的具体解释在本书的 <a target="_blank" rel="noopener" href="https://course.rs/cargo/intro.html">Cargo详解专题</a> 有介绍，这里就简单进行说明</p>
+<p><code>Tokio</code> 有很多功能和特性，例如 <code>TCP</code>，<code>UDP</code>，<code>Unix sockets</code>，同步工具，多调度类型等等，不是每个应用都需要所有的这些特性。为了优化编译时间和最终生成可执行文件大小、内存占用大小，应用可以对这些特性进行可选引入</p>
+<p>而这里为了演示的方便，我们使用 <code>full</code> ，表示直接引入所有的特性</p>
+<h3 id="任务"><a href="#任务" class="headerlink" title="任务"></a>任务</h3><p>一个 <code>Tokio</code> 任务是一个异步的绿色线程，它们通过 <code>tokio::spawn</code> 进行创建，该函数会返回一个 <code>JoinHandle</code> 类型的句柄，调用者可以使用该句柄跟创建的任务进行交互</p>
+<pre class="line-numbers language-Rust" data-language="Rust"><code class="language-Rust">#[tokio::main]
+async fn main() &#123;
+    let handle &#x3D; tokio::spawn(async &#123;
+        &#x2F;&#x2F; Do some async work
+        &quot;return value&quot;
+    &#125;);
+
+    &#x2F;&#x2F; Do some other work
+
+    let out &#x3D; handle.await.unwrap();
+    println!(&quot;GOT &#123;&#125;&quot;, out);
+&#125;<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>等待<code>JoinHandle</code> 返回一个<code>Result</code>。当任务在执行过程中遇到错误时，<code>JoinHandle</code> 将会返回一个<code>Err</code>。当任务发生紧急情况或者任务因运行时关闭而强制取消时，就会发生这种情况</p>
+<p>任务是调度程序管理的执行单元。<code>spawn</code> 生成任务会将其提交给Tokio 调度程序，然后由它负责调度执行。需要注意的是，执行任务的线程未必是创建任务的线程，任务完全有可能运行在另一个不同的线程上，而且任务在生成后，它还可能会在线程间被移动</p>
+<h3 id="‘static-约束"><a href="#‘static-约束" class="headerlink" title="‘static 约束"></a>‘static 约束</h3><p>当在Tokio 运行时生成任务时，其类型的生命周期必须是<code>&#39;static</code>。意味着，在任务中不能使用外部数据的引用</p>
+<blockquote>
+<blockquote>
+<p>这是一个常见的误解，<code>static</code> 总是意味着“永远活着”，但事实并非如此。仅仅因为某个值是<code>static</code> 并不意味着存在内存泄漏。<a target="_blank" rel="noopener" href="https://github.com/pretzelhammer/rust-blog/blob/master/posts/common-rust-lifetime-misconceptions.md#2-if-t-static-then-t-must-be-valid-for-the-entire-program">常见的Rust生命周期误解</a></p>
+</blockquote>
+</blockquote>
+<p>例如，以下内容将无法编译：</p>
+<pre class="line-numbers language-Rust" data-language="Rust"><code class="language-Rust">use tokio::task;
+
+#[tokio::main]
+async fn main() &#123;
+    let v &#x3D; vec![1, 2, 3];
+
+    task::spawn(async &#123;
+        println!(&quot;Here&#39;s a vec: &#123;:?&#125;&quot;, v);
+    &#125;);
+&#125;<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>发生这种情况是因为，默认情况下，变量不会移动到异步块中。该v变量仍然属于该main函数。线程println借用v。将第7行更改为<code>task::spawn(async move &#123;</code> 将指示编译器将v移动到线程内部。现在，该任务拥有其所有数据，使其成为<code>&#39;static</code></p>
+<p>我们说某个值是<code>&#39;static</code> 时，这意味着永远保留该值不会无效。这很重要，因为编译器无法推断新生成的任务会保留多长时间。我们必须确保任务能够永远保存，以便Tokio可以让任务运行到需要的时间</p>
+<p>如果必须同时从多个任务访问单个数据，则必须使用同步原语（例如Arc）</p>
+<h3 id="Send-约束"><a href="#Send-约束" class="headerlink" title="Send 约束"></a>Send 约束</h3><p><code>tokio::spawn</code> 生成的任务必须实现 <code>Send</code> 特征，因为当这些任务在 <code>.await</code> 执行过程中发生阻塞时，Tokio 调度器会将任务在线程间移动</p>
+<p>一个任务要实现 <code>Send</code> 特征，那它在 <code>.await</code> 调用的过程中所持有的全部数据都必须实现 <code>Send</code> 特征。当 <code>.await</code> 调用发生阻塞时，任务会让出当前线程所有权给调度器，然后当任务准备好后，调度器会从上一次暂停的位置继续执行该任务。该流程能正确的工作，任务必须将<code>.await</code>之后使用的所有状态保存起来，这样才能在中断后恢复现场并继续执行。若这些状态实现了 <code>Send</code> 特征(可以在线程间安全地移动)，那任务自然也就可以在线程间安全地移动</p>
+<p>例如这段代码是可以编译运行的：</p>
+<pre class="line-numbers language-Rust" data-language="Rust"><code class="language-Rust">use tokio::task::yield_now;
+use std::rc::Rc;
+
+#[tokio::main]
+async fn main() &#123;
+    tokio::spawn(async &#123;
+        &#x2F;&#x2F; 语句块的使用强制了 &#96;rc&#96; 会在 &#96;.await&#96; 被调用前就被释放，
+        &#x2F;&#x2F; 因此 &#96;rc&#96; 并不会影响 &#96;.await&#96;的安全性
+        &#123;
+            let rc &#x3D; Rc::new(&quot;hello&quot;);
+            println!(&quot;&#123;&#125;&quot;, rc);
+        &#125;
+
+        &#x2F;&#x2F; &#96;rc&#96; 的作用范围已经失效，因此当任务让出所有权给当前线程时，它无需作为状态被保存起来
+        yield_now().await;
+    &#125;);
+&#125;<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p>而这段则不行：</p>
+<pre class="line-numbers language-Rust" data-language="Rust"><code class="language-Rust">use tokio::task::yield_now;
+use std::rc::Rc;
+
+#[tokio::main]
+async fn main() &#123;
+    tokio::spawn(async &#123;
+        let rc &#x3D; Rc::new(&quot;hello&quot;);
+
+        &#x2F;&#x2F; &#96;rc&#96; 在 &#96;.await&#96; 后还被继续使用，因此它必须被作为任务的状态保存起来
+        yield_now().await;
+
+        &#x2F;&#x2F; 事实上，注释掉下面一行代码，依然会报错
+        &#x2F;&#x2F; 原因是：是否保存，不取决于 &#96;rc&#96; 是否被使用，而是取决于 &#96;.await&#96;在调用时是否仍然处于 &#96;rc&#96; 的作用域中
+        println!(&quot;&#123;&#125;&quot;, rc);
+
+        &#x2F;&#x2F; rc 作用域在这里结束
+    &#125;);
+&#125;<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>这里有一个很重要的点，代码注释里面有讲到，<code>rc</code> 是否保存到任务状态中，取决于<code>.await</code> 的调用是否处于它的作用域中，上面代码中，就算注释掉<code>println!</code>，该报错依然会报错，因此<code>rc</code> 的作用域知道<code>async</code> 的末尾才结束</p>
+<h2 id="共享状态"><a href="#共享状态" class="headerlink" title="共享状态"></a>共享状态</h2><p>在使用 <code>Tokio</code> 编写异步代码时，一个常见的错误无条件地使用 <code>tokio::sync::Mutex</code> ，而真相是：<code>Tokio</code> 提供的异步锁只应该在跨多个 <code>.await</code>调用时使用，而且 <code>Tokio</code> 的 <code>Mutex</code> 实际上内部使用的也是 <code>std::sync::Mutex</code></p>
+<ul>
+<li>锁如果在多个 <code>.await</code> 过程中持有，应该使用 <code>Tokio</code> 提供的锁，原因是 <code>.await</code>的过程中锁可能在线程间转移，若使用标准库的同步锁存在死锁的可能性，例如某个任务刚获取完锁，还没使用完就因为 <code>.await</code> 让出了当前线程的所有权，结果下个任务又去获取了锁，造成死锁</li>
+<li>锁竞争不多的情况下，使用 <code>std::sync::Mutex</code></li>
+<li>锁竞争多，可以考虑使用三方库提供的性能更高的锁，例如<a target="_blank" rel="noopener" href="https://docs.rs/parking_lot/0.10.2/parking_lot/type.Mutex.html">parking_lot::Mutex</a></li>
+</ul>
+<p>当同步锁的竞争变成一个问题时，使用Tokio提供的异步锁几乎并不能帮你解决问题，此时可以考虑如下选项：</p>
+<ul>
+<li>创建专门的任务并使用消息传递的方式来管理状态</li>
+<li>将锁进行分片</li>
+<li>重构代码以避免锁</li>
+</ul>
+
+	
+	</div>
+  <a type="button" href="/2023/09/04/Tokio随记/#more" class="btn btn-default more">阅读此文</a>
+</div>
+
+		
+			
+	
+	<!-- display as entry -->
+<div class="row">
+	<div class="col-md-8">
+		<h3 class="title">
+			<a href="/2023/08/24/Rust学习笔记/" title="2023.09.14持续更新笔记,主要是Rust的一些进阶语法">Rust学习笔记</a>
 		</h3>
 		</div>
 	<div class="col-md-4">
@@ -736,6 +921,230 @@ pub fn add(a: i32, b: i32) -&gt; i32 &#123;
 <h3 id="写入集成测试"><a href="#写入集成测试" class="headerlink" title="写入集成测试"></a>写入集成测试</h3><p>单元和文档测试提供了简洁具体的测试。 但是，将 Crate 作为一个整体测试也是一种好办法。 然后，我们可以确认 Crate 的各代码部分是否按预期一起运行</p>
 <p>若要将 Crate 作为成体进行测试，可以使用集成测试。 Rust 测试套件支持这种类型的测试，该测试仅调用库的公共 API 包含的函数。 我们可以使用集成测试来检查代码在其他人员使用它时的工作情况</p>
 <p>这些测试的独特之处在于它们存在于单独的目录和文件中，因此它们可以在外部对库代码进行测试。 使用 Cargo 运行集成测试时，请将测试放在“tests”目录中。 Cargo 会运行此目录中的每个源文件。 在项目目录中创建测试，级别与你的 src 目录相同</p>
+<h2 id="闭包"><a href="#闭包" class="headerlink" title="闭包"></a>闭包</h2><h3 id="三种Fn-特征"><a href="#三种Fn-特征" class="headerlink" title="三种Fn 特征"></a>三种<code>Fn</code> 特征</h3><ul>
+<li><p><code>FnOnce</code>,该类型的闭包会拿走被捕获变量的所有权</p>
+<pre class="line-numbers language-rust" data-language="rust"><code class="language-rust"><span class="token keyword">fn</span> <span class="token function-definition function">fn_once</span><span class="token operator">&lt;</span><span class="token class-name">F</span><span class="token operator">></span><span class="token punctuation">(</span>func<span class="token punctuation">:</span> <span class="token class-name">F</span><span class="token punctuation">)</span> 
+<span class="token keyword">where</span>
+    <span class="token class-name">F</span><span class="token punctuation">:</span> <span class="token class-name">FnOnce</span><span class="token punctuation">(</span><span class="token keyword">usize</span><span class="token punctuation">)</span> <span class="token punctuation">-></span> <span class="token keyword">bool</span> <span class="token operator">+</span> <span class="token class-name">Copy</span><span class="token punctuation">,</span>
+<span class="token punctuation">&#123;</span>
+    <span class="token macro property">println!</span><span class="token punctuation">(</span><span class="token string">"&#123;func(3)&#125;"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token macro property">println!</span><span class="token punctuation">(</span><span class="token string">"&#123;func(4)&#125;"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">&#125;</span>
+
+<span class="token keyword">fn</span> <span class="token function-definition function">main</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+    <span class="token keyword">let</span> x <span class="token operator">=</span> <span class="token macro property">vec!</span><span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">,</span> <span class="token number">3</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+    <span class="token function">fn_once</span><span class="token punctuation">(</span><span class="token closure-params"><span class="token closure-punctuation punctuation">|</span>z<span class="token closure-punctuation punctuation">|</span></span> <span class="token punctuation">&#123;</span>z <span class="token operator">==</span> x<span class="token punctuation">.</span><span class="token function">len</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">&#125;</span><span class="token punctuation">)</span>
+<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>如果想强制闭包取得捕获变量的所有权,可以在参数列表前添加<code>move</code>关键字,这种用法通常用于闭包的生命周期大于捕获变量的生命周期,例如将闭包返回或移入其他线程</p>
+<pre class="line-numbers language-rust" data-language="rust"><code class="language-rust"><span class="token keyword">use</span> <span class="token namespace">std<span class="token punctuation">::</span></span>thread<span class="token punctuation">;</span>
+
+<span class="token keyword">let</span> v <span class="token operator">=</span> <span class="token macro property">vec!</span><span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">,</span> <span class="token number">3</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+<span class="token keyword">let</span> handle <span class="token operator">=</span> <span class="token namespace">thread<span class="token punctuation">::</span></span><span class="token function">spawn</span><span class="token punctuation">(</span><span class="token keyword">move</span> <span class="token closure-params"><span class="token closure-punctuation punctuation">|</span><span class="token closure-punctuation punctuation">|</span></span> <span class="token punctuation">&#123;</span>
+    <span class="token function">println</span><span class="token punctuation">(</span><span class="token string">"Here's a vector: &#123;:?&#125;"</span><span class="token punctuation">,</span> v<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">&#125;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+handle<span class="token punctuation">.</span><span class="token function">join</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">unwrap</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+</li>
+<li><p><code>FnMut</code>,它以可变借用的方式捕获了环境中的值,因此可以修改该值</p>
+</li>
+</ul>
+<pre class="line-numbers language-rust" data-language="rust"><code class="language-rust"><span class="token keyword">pub</span> <span class="token keyword">fn</span> <span class="token function-definition function">fn_mut</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+    <span class="token keyword">let</span> <span class="token keyword">mut</span> s <span class="token operator">=</span> <span class="token class-name">String</span><span class="token punctuation">::</span><span class="token function">new</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token comment">// mut,update_string可变闭包</span>
+    <span class="token keyword">let</span> <span class="token keyword">mut</span> update_string <span class="token operator">=</span> <span class="token closure-params"><span class="token closure-punctuation punctuation">|</span><span class="token keyword">str</span><span class="token closure-punctuation punctuation">|</span></span> s<span class="token punctuation">.</span><span class="token function">push_str</span><span class="token punctuation">(</span><span class="token keyword">str</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token function">update_string</span><span class="token punctuation">(</span><span class="token string">"hello"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token macro property">println!</span><span class="token punctuation">(</span><span class="token string">"&#123;:?&#125;"</span><span class="token punctuation">,</span> s<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<pre class="line-numbers language-rust" data-language="rust"><code class="language-rust"><span class="token keyword">pub</span> <span class="token keyword">fn</span> <span class="token function-definition function">fn_mut1</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+    <span class="token keyword">let</span> <span class="token keyword">mut</span> s <span class="token operator">=</span> <span class="token class-name">String</span><span class="token punctuation">::</span><span class="token function">new</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">let</span> update_string <span class="token operator">=</span> <span class="token closure-params"><span class="token closure-punctuation punctuation">|</span><span class="token keyword">str</span><span class="token closure-punctuation punctuation">|</span></span> s<span class="token punctuation">.</span><span class="token function">push_str</span><span class="token punctuation">(</span><span class="token keyword">str</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token comment">// 编译器会自动推导出update_string闭包的类型</span>
+    <span class="token function">exec</span><span class="token punctuation">(</span>update_string<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token macro property">println!</span><span class="token punctuation">(</span><span class="token string">"&#123;:?&#125;"</span><span class="token punctuation">,</span> s<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">&#125;</span>
+
+<span class="token keyword">fn</span> <span class="token function-definition function">exec</span><span class="token operator">&lt;</span><span class="token lifetime-annotation symbol">'a</span><span class="token punctuation">,</span> <span class="token class-name">F</span><span class="token punctuation">:</span> <span class="token class-name">FnMut</span><span class="token punctuation">(</span><span class="token operator">&amp;</span><span class="token lifetime-annotation symbol">'a</span> <span class="token keyword">str</span><span class="token punctuation">)</span><span class="token operator">></span><span class="token punctuation">(</span><span class="token keyword">mut</span> f<span class="token punctuation">:</span> <span class="token class-name">F</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+    <span class="token function">f</span><span class="token punctuation">(</span><span class="token string">"world"</span><span class="token punctuation">)</span>
+<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<ul>
+<li><code>Fn</code>特征,它以不可变借用的方式捕获环境中的值</li>
+</ul>
+<pre class="line-numbers language-rust" data-language="rust"><code class="language-rust"><span class="token keyword">pub</span> <span class="token keyword">fn</span> <span class="token function-definition function">fn_1</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+    <span class="token keyword">let</span> s <span class="token operator">=</span> <span class="token class-name">String</span><span class="token punctuation">::</span><span class="token function">from</span><span class="token punctuation">(</span><span class="token string">"hello"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token keyword">let</span> update_string <span class="token operator">=</span> <span class="token closure-params"><span class="token closure-punctuation punctuation">|</span>chs<span class="token closure-punctuation punctuation">|</span></span> <span class="token macro property">println!</span><span class="token punctuation">(</span><span class="token string">"&#123;&#125; &#123;&#125;"</span><span class="token punctuation">,</span> s<span class="token punctuation">,</span> chs<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token function">exec1</span><span class="token punctuation">(</span>update_string<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">&#125;</span>
+
+<span class="token keyword">fn</span> <span class="token function-definition function">exec1</span><span class="token operator">&lt;</span><span class="token class-name">F</span><span class="token punctuation">:</span> <span class="token class-name">Fn</span><span class="token punctuation">(</span><span class="token class-name">String</span><span class="token punctuation">)</span><span class="token operator">></span><span class="token punctuation">(</span>f<span class="token punctuation">:</span> <span class="token class-name">F</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+    <span class="token function">f</span><span class="token punctuation">(</span><span class="token string">"world"</span><span class="token punctuation">.</span><span class="token function">to_string</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<h3 id="move和Fn"><a href="#move和Fn" class="headerlink" title="move和Fn"></a><code>move</code>和<code>Fn</code></h3><p>在上面,我们讲到了<code>move</code>关键字对于<code>FnOnce</code>特征的重要性,但实际上使用了<code>move</code>的闭包依然可能实现了<code>Fn</code>或<code>FnMut</code>特征</p>
+<p>因此,一个闭包实现了哪种Fn特征取决于该闭包如何使用被捕获的变量,而不是取决于闭包如何捕获它们.move本身强调的就是后者,闭包如何捕获变量:</p>
+<pre class="line-numbers language-rust" data-language="rust"><code class="language-rust"><span class="token keyword">fn</span> <span class="token function-definition function">main</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+    <span class="token keyword">let</span> s <span class="token operator">=</span> <span class="token class-name">String</span><span class="token punctuation">::</span><span class="token function">new</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token keyword">let</span> update_string <span class="token operator">=</span>  <span class="token keyword">move</span> <span class="token closure-params"><span class="token closure-punctuation punctuation">|</span><span class="token closure-punctuation punctuation">|</span></span> <span class="token macro property">println!</span><span class="token punctuation">(</span><span class="token string">"&#123;&#125;"</span><span class="token punctuation">,</span>s<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token function">exec</span><span class="token punctuation">(</span>update_string<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">&#125;</span>
+
+<span class="token keyword">fn</span> <span class="token function-definition function">exec</span><span class="token operator">&lt;</span><span class="token class-name">F</span><span class="token punctuation">:</span> <span class="token class-name">FnOnce</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">></span><span class="token punctuation">(</span>f<span class="token punctuation">:</span> <span class="token class-name">F</span><span class="token punctuation">)</span>  <span class="token punctuation">&#123;</span>
+    <span class="token function">f</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>这个闭包中使用了move关键字,所以我们的闭包捕获了它,但是由于闭包对s的使用仅仅是不可变借用,因此该闭包实际上还实现了Fn特征.因为该闭包不仅仅实现了FnOnce特征</p>
+<pre class="line-numbers language-rust" data-language="rust"><code class="language-rust"><span class="token keyword">fn</span> <span class="token function-definition function">main</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+    <span class="token keyword">let</span> s <span class="token operator">=</span> <span class="token class-name">String</span><span class="token punctuation">::</span><span class="token function">new</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token keyword">let</span> update_string <span class="token operator">=</span>  <span class="token keyword">move</span> <span class="token closure-params"><span class="token closure-punctuation punctuation">|</span><span class="token closure-punctuation punctuation">|</span></span> <span class="token macro property">println!</span><span class="token punctuation">(</span><span class="token string">"&#123;&#125;"</span><span class="token punctuation">,</span>s<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token function">exec</span><span class="token punctuation">(</span>update_string<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">&#125;</span>
+
+<span class="token keyword">fn</span> <span class="token function-definition function">exec</span><span class="token operator">&lt;</span><span class="token class-name">F</span><span class="token punctuation">:</span> <span class="token class-name">Fn</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">></span><span class="token punctuation">(</span>f<span class="token punctuation">:</span> <span class="token class-name">F</span><span class="token punctuation">)</span>  <span class="token punctuation">&#123;</span>
+    <span class="token function">f</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<h3 id="三种Fn的关系"><a href="#三种Fn的关系" class="headerlink" title="三种Fn的关系"></a>三种Fn的关系</h3><p>实际上,一个闭包并不仅仅实现某一种Fn特征,规则如下:</p>
+<ul>
+<li>所有的闭包都自动实现了FnOnce特征,因此任何一个闭包都至少可以被调用一次</li>
+<li>没有移出所捕获变量的所有权的闭包自动实现了FnMut特征</li>
+<li>不需要对捕获变量进行改变的闭包自动实现了Fn特征</li>
+</ul>
+<pre class="line-numbers language-rust" data-language="rust"><code class="language-rust"><span class="token keyword">pub</span> <span class="token keyword">fn</span> <span class="token function-definition function">fn_all</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+    <span class="token keyword">let</span> s <span class="token operator">=</span> <span class="token class-name">String</span><span class="token punctuation">::</span><span class="token function">from</span><span class="token punctuation">(</span><span class="token string">"Hello"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token keyword">let</span> update_string <span class="token operator">=</span> <span class="token closure-params"><span class="token closure-punctuation punctuation">|</span><span class="token closure-punctuation punctuation">|</span></span> <span class="token macro property">println!</span><span class="token punctuation">(</span><span class="token string">"&#123;&#125;"</span><span class="token punctuation">,</span> s<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token function">exec_fn</span><span class="token punctuation">(</span>update_string<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token function">exec_fn_once</span><span class="token punctuation">(</span>update_string<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token function">exec_fn_mut</span><span class="token punctuation">(</span>update_string<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">&#125;</span>
+
+<span class="token keyword">fn</span> <span class="token function-definition function">exec_fn_once</span><span class="token operator">&lt;</span><span class="token class-name">F</span><span class="token punctuation">:</span> <span class="token class-name">FnOnce</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">></span><span class="token punctuation">(</span>f<span class="token punctuation">:</span> <span class="token class-name">F</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+    <span class="token function">f</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token punctuation">&#125;</span>
+
+<span class="token keyword">fn</span> <span class="token function-definition function">exec_fn_mut</span><span class="token operator">&lt;</span><span class="token class-name">F</span><span class="token punctuation">:</span> <span class="token class-name">FnMut</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">></span><span class="token punctuation">(</span><span class="token keyword">mut</span> f<span class="token punctuation">:</span> <span class="token class-name">F</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+    <span class="token function">f</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token punctuation">&#125;</span>
+
+<span class="token keyword">fn</span> <span class="token function-definition function">exec_fn</span><span class="token operator">&lt;</span><span class="token class-name">F</span><span class="token punctuation">:</span> <span class="token class-name">Fn</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">></span><span class="token punctuation">(</span>f<span class="token punctuation">:</span> <span class="token class-name">F</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+    <span class="token function">f</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<h3 id="闭包作为函数返回值"><a href="#闭包作为函数返回值" class="headerlink" title="闭包作为函数返回值"></a>闭包作为函数返回值</h3><p>需要加上<code>impl</code>,或者使用智能指针(如Box)包裹返回</p>
+<pre class="line-numbers language-rust" data-language="rust"><code class="language-rust"><span class="token comment">// 编译报错</span>
+<span class="token keyword">fn</span> <span class="token function-definition function">factory</span><span class="token punctuation">(</span>x<span class="token punctuation">:</span><span class="token keyword">i32</span><span class="token punctuation">)</span> <span class="token punctuation">-></span> <span class="token keyword">impl</span> <span class="token class-name">Fn</span><span class="token punctuation">(</span><span class="token keyword">i32</span><span class="token punctuation">)</span> <span class="token punctuation">-></span> <span class="token keyword">i32</span> <span class="token punctuation">&#123;</span>
+
+    <span class="token keyword">let</span> num <span class="token operator">=</span> <span class="token number">5</span><span class="token punctuation">;</span>
+
+    <span class="token keyword">if</span> x <span class="token operator">></span> <span class="token number">1</span><span class="token punctuation">&#123;</span>
+        <span class="token keyword">move</span> <span class="token closure-params"><span class="token closure-punctuation punctuation">|</span>x<span class="token closure-punctuation punctuation">|</span></span> x <span class="token operator">+</span> num
+    <span class="token punctuation">&#125;</span> <span class="token keyword">else</span> <span class="token punctuation">&#123;</span>
+        <span class="token keyword">move</span> <span class="token closure-params"><span class="token closure-punctuation punctuation">|</span>x<span class="token closure-punctuation punctuation">|</span></span> x <span class="token operator">-</span> num
+    <span class="token punctuation">&#125;</span>
+<span class="token punctuation">&#125;</span>
+
+<span class="token comment">// 改正</span>
+<span class="token keyword">fn</span> <span class="token function-definition function">factory</span><span class="token punctuation">(</span>x<span class="token punctuation">:</span><span class="token keyword">i32</span><span class="token punctuation">)</span> <span class="token punctuation">-></span> <span class="token class-name">Box</span><span class="token operator">&lt;</span><span class="token keyword">dyn</span> <span class="token class-name">Fn</span><span class="token punctuation">(</span><span class="token keyword">i32</span><span class="token punctuation">)</span> <span class="token punctuation">-></span> <span class="token keyword">i32</span><span class="token operator">></span> <span class="token punctuation">&#123;</span>
+
+    <span class="token keyword">let</span> num <span class="token operator">=</span> <span class="token number">5</span><span class="token punctuation">;</span>
+
+    <span class="token keyword">if</span> x <span class="token operator">></span> <span class="token number">1</span><span class="token punctuation">&#123;</span>
+        <span class="token keyword">move</span> <span class="token closure-params"><span class="token closure-punctuation punctuation">|</span>x<span class="token closure-punctuation punctuation">|</span></span> x <span class="token operator">+</span> num
+    <span class="token punctuation">&#125;</span> <span class="token keyword">else</span> <span class="token punctuation">&#123;</span>
+        <span class="token keyword">move</span> <span class="token closure-params"><span class="token closure-punctuation punctuation">|</span>x<span class="token closure-punctuation punctuation">|</span></span> x <span class="token operator">-</span> num
+    <span class="token punctuation">&#125;</span>
+<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<h2 id="迭代器-1"><a href="#迭代器-1" class="headerlink" title="迭代器"></a>迭代器</h2><h3 id="Iterator-和-IntoIterator的区别"><a href="#Iterator-和-IntoIterator的区别" class="headerlink" title="Iterator 和 IntoIterator的区别"></a>Iterator 和 IntoIterator的区别</h3><p>这两个其实很容易搞混.</p>
+<p><code>Iterator</code>就是迭代器特征,只有实现了它才能成为迭代器,才能调用<code>next</code></p>
+<p><code>IntoIterator</code>强调的是某一个类型如果实现了该特征,它可以通过<code>into_iter</code>, <code>iter</code>等方法变成一个迭代器</p>
+<h3 id="消费者与适配器"><a href="#消费者与适配器" class="headerlink" title="消费者与适配器"></a>消费者与适配器</h3><p>消费者是迭代器上的方法,它会消费掉迭代器中的元素,然后返回其类型的值,这些消费者都是有一个共同的特点:在它们的定义中,都依赖<code>next</code>方法来消费元素,因此这也是为什么迭代器要实现<code>Iterator</code>特征,而该特征必须要实现<code>next</code>方法的原因</p>
+<p><code>消费者适配器</code></p>
+<p>只要迭代器上的某个方法A在其内部调用了<code>next</code>方法,那么A就被称为<code>消费性适配器</code>:因为<code>next</code>方法会消耗掉迭代器上的元素,所以方法A的调用也会消耗掉迭代器上的元素</p>
+<pre class="line-numbers language-rust" data-language="rust"><code class="language-rust"><span class="token keyword">fn</span> <span class="token function-definition function">main</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+    <span class="token keyword">let</span> v1 <span class="token operator">=</span> <span class="token macro property">vec!</span><span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">,</span> <span class="token number">3</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+
+    <span class="token keyword">let</span> v1_iter <span class="token operator">=</span> v1<span class="token punctuation">.</span><span class="token function">iter</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token keyword">let</span> total<span class="token punctuation">:</span> <span class="token keyword">i32</span> <span class="token operator">=</span> v1_iter<span class="token punctuation">.</span><span class="token function">sum</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token macro property">assert_eq!</span><span class="token punctuation">(</span>total<span class="token punctuation">,</span> <span class="token number">6</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token comment">// v1_iter 是借用了 v1，因此 v1 可以照常使用</span>
+    <span class="token macro property">println!</span><span class="token punctuation">(</span><span class="token string">"&#123;:?&#125;"</span><span class="token punctuation">,</span>v1<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token comment">// 以下代码会报错，因为 `sum` 拿到了迭代器 `v1_iter` 的所有权</span>
+    <span class="token comment">// println!("&#123;:?&#125;",v1_iter);</span>
+<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>如代码注释中所说明的:在使用<code>sum</code>方法后,我们将无法再使用<code>v1_iter</code>,因为<code>sum</code>拿走了该迭代器的所有权:</p>
+<pre class="line-numbers language-rust" data-language="rust"><code class="language-rust"><span class="token keyword">fn</span> <span class="token function-definition function">sum</span><span class="token operator">&lt;</span><span class="token class-name">S</span><span class="token operator">></span><span class="token punctuation">(</span><span class="token keyword">self</span><span class="token punctuation">)</span> <span class="token punctuation">-></span> <span class="token class-name">S</span> 
+<span class="token keyword">where</span>
+    <span class="token keyword">Self</span><span class="token punctuation">:</span> <span class="token class-name">Sized</span><span class="token punctuation">,</span>
+    <span class="token class-name">S</span><span class="token punctuation">:</span> <span class="token class-name">Sum</span><span class="token operator">&lt;</span><span class="token keyword">Self</span><span class="token punctuation">::</span><span class="token class-name">Item</span><span class="token operator">></span><span class="token punctuation">,</span>
+<span class="token punctuation">&#123;</span>
+    <span class="token class-name">Sum</span><span class="token punctuation">::</span><span class="token function">sum</span><span class="token punctuation">(</span><span class="token keyword">self</span><span class="token punctuation">)</span>
+<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p><code>迭代器适配器</code></p>
+<p>既然消费者适配器是消费掉迭代器,然后返回一个值.那么迭代器适配器,顾名思义,会返回一个新的迭代器,这是实现链式方式方法调用的关键: <code>v.iter().map().filter()...</code></p>
+<p>与消费者适配器不同,迭代器适配器是惰性的,意味着需要一个消费者适配器来收尾,最终将迭代器转换成一个具体的值:</p>
+<pre class="line-numbers language-rust" data-language="rust"><code class="language-rust"><span class="token keyword">let</span> v1 <span class="token operator">=</span> <span class="token class-name">Vec</span><span class="token operator">&lt;</span><span class="token keyword">u32</span><span class="token operator">></span> <span class="token operator">=</span> <span class="token macro property">vec!</span><span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">,</span> <span class="token number">3</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+v1<span class="token punctuation">.</span><span class="token function">iter</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">map</span><span class="token punctuation">(</span><span class="token closure-params"><span class="token closure-punctuation punctuation">|</span>x<span class="token closure-punctuation punctuation">|</span></span> x <span class="token operator">+</span> <span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token comment">// 编译报错</span>
+warning<span class="token punctuation">:</span> unused `<span class="token class-name">Map</span>` that must be used
+ <span class="token operator">-</span><span class="token punctuation">-></span> src<span class="token operator">/</span>main<span class="token punctuation">.</span>rs<span class="token punctuation">:</span><span class="token number">4</span><span class="token punctuation">:</span><span class="token number">5</span>
+  <span class="token operator">|</span>
+<span class="token number">4</span> <span class="token operator">|</span>     v1<span class="token punctuation">.</span><span class="token function">iter</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">map</span><span class="token punctuation">(</span><span class="token closure-params"><span class="token closure-punctuation punctuation">|</span>x<span class="token closure-punctuation punctuation">|</span></span> x <span class="token operator">+</span> <span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token operator">|</span>     <span class="token operator">^</span><span class="token operator">^</span><span class="token operator">^</span><span class="token operator">^</span><span class="token operator">^</span><span class="token operator">^</span><span class="token operator">^</span><span class="token operator">^</span><span class="token operator">^</span><span class="token operator">^</span><span class="token operator">^</span><span class="token operator">^</span><span class="token operator">^</span><span class="token operator">^</span><span class="token operator">^</span><span class="token operator">^</span><span class="token operator">^</span><span class="token operator">^</span><span class="token operator">^</span><span class="token operator">^</span><span class="token operator">^</span><span class="token operator">^</span><span class="token operator">^</span><span class="token operator">^</span><span class="token operator">^</span>
+  <span class="token operator">|</span>
+  <span class="token operator">=</span> note<span class="token punctuation">:</span> `<span class="token attribute attr-name">#[warn(unused_must_use)]</span>` on by default
+  <span class="token operator">=</span> note<span class="token punctuation">:</span> iterators are lazy and <span class="token keyword">do</span> nothing unless consumed <span class="token comment">// 迭代器 map 是惰性的，这里不产生任何效果</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>这里的<code>map</code>方法是一个迭代器适配器,它是惰性的,不产生任何行为,因此我们还需要一个消费者适配器进行收尾:</p>
+<pre class="line-numbers language-rust" data-language="rust"><code class="language-rust"><span class="token keyword">let</span> v1<span class="token punctuation">:</span> <span class="token class-name">Vec</span><span class="token operator">&lt;</span><span class="token keyword">i32</span><span class="token operator">></span> <span class="token operator">=</span> <span class="token macro property">vec!</span><span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">,</span> <span class="token number">3</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+
+<span class="token keyword">let</span> v2<span class="token punctuation">:</span> <span class="token class-name">Vec</span><span class="token operator">&lt;</span>_<span class="token operator">></span> <span class="token operator">=</span> v1<span class="token punctuation">.</span><span class="token function">iter</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">map</span><span class="token punctuation">(</span><span class="token closure-params"><span class="token closure-punctuation punctuation">|</span>x<span class="token closure-punctuation punctuation">|</span></span> x <span class="token operator">+</span> <span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">collect</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token macro property">assert_eq!</span><span class="token punctuation">(</span>v2<span class="token punctuation">,</span> <span class="token macro property">vec!</span><span class="token punctuation">[</span><span class="token number">2</span><span class="token punctuation">,</span> <span class="token number">3</span><span class="token punctuation">,</span> <span class="token number">4</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p><code>collect</code></p>
+<p>上面代码中, 使用了<code>collect</code>方法,该方法就是一个消费者适配器, 使用它可以将一个迭代器中的元素收集到指定类型中, 这里我们为v2标注了<code>Vec&lt;_&gt;</code>类型,就是为了告诉<code>collect</code>: 请把迭代器中的元素消费掉, 然后把值收集成<code>Vec&lt;_&gt;</code>类型, 至于为何使用<code>_</code>, 因为编译器会帮我们自动推导</p>
+<h2 id="智能指针"><a href="#智能指针" class="headerlink" title="智能指针"></a>智能指针</h2><p><code>堆栈</code></p>
+<p>栈内存从高位地址向下增长，且栈内存是连续分配的</p>
+<p>在 Rust 中，main 线程的栈大小是 8MB，普通线程是 2MB，在函数调用时会在其中创建一个临时栈空间，调用结束后 Rust 会让这个栈空间里的对象自动进入 Drop 流程，最后栈顶指针自动移动到上一个调用栈顶，无需程序员手动干预，因而栈内存申请和释放是非常高效的</p>
+<p>与栈相反，堆上内存则是从低位地址向上增长，堆内存通常只受物理内存限制，而且通常是不连续的，因此从性能的角度看，栈往往比堆更高</p>
+<p>相比其它语言，Rust 堆上对象还有一个特殊之处，它们都拥有一个所有者，因此受所有权规则的限制：当赋值时，发生的是所有权的转移（只需浅拷贝栈上的引用或智能指针即可），例如以下代码：</p>
+<pre class="line-numbers language-rust" data-language="rust"><code class="language-rust"><span class="token keyword">fn</span> <span class="token function-definition function">main</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+    <span class="token keyword">let</span> b <span class="token operator">=</span> <span class="token function">foo</span><span class="token punctuation">(</span><span class="token string">"world"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token macro property">println!</span><span class="token punctuation">(</span><span class="token string">"&#123;&#125;"</span><span class="token punctuation">,</span> b<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">&#125;</span>
+
+<span class="token keyword">fn</span> <span class="token function-definition function">foo</span><span class="token punctuation">(</span>x<span class="token punctuation">:</span> <span class="token operator">&amp;</span><span class="token keyword">str</span><span class="token punctuation">)</span> <span class="token punctuation">-></span> <span class="token class-name">String</span> <span class="token punctuation">&#123;</span>
+    <span class="token keyword">let</span> a <span class="token operator">=</span> <span class="token string">"Hello, "</span><span class="token punctuation">.</span><span class="token function">to_string</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">+</span> x<span class="token punctuation">;</span>
+    a
+<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<h3 id="堆栈的性能"><a href="#堆栈的性能" class="headerlink" title="堆栈的性能"></a>堆栈的性能</h3><p>很多人可能会觉得栈的性能肯定比堆高，其实未必。 由于我们在后面的性能专题会专门讲解堆栈的性能问题，因此这里就大概给出结论：</p>
+<ul>
+<li>小型数据，在栈上的分配性能和读取性能都要比堆上高</li>
+<li>中型数据，栈上分配性能高，但是读取性能和堆上并无区别，因为无法利用寄存器或 CPU 高速缓存，最终还是要经过一次内存寻址</li>
+<li>大型数据，只建议在堆上分配和使用</li>
+</ul>
+<h3 id="Box-的使用场景"><a href="#Box-的使用场景" class="headerlink" title="Box 的使用场景"></a>Box 的使用场景</h3><p>由于 Box 是简单的封装，除了将值存储在堆上外，并没有其它性能上的损耗。而性能和功能往往是鱼和熊掌，因此 Box 相比其它智能指针，功能较为单一，可以在以下场景中使用它：</p>
+<ul>
+<li>特意的将数据分配在堆上</li>
+<li>数据较大时，又不想在转移所有权时进行数据拷贝</li>
+<li>类型的大小在编译期无法确定，但是我们又需要固定大小的类型时</li>
+<li>特征对象，用于说明对象实现了一个特征，而不是某个特定的类型</li>
+</ul>
 
 	
 	</div>
@@ -989,7 +1398,7 @@ pub fn add(a: i32, b: i32) -&gt; i32 &#123;
 		
 			<li><a href="/categories/Hexo/">Hexo<span>1</span></a></li>
 		
-			<li><a href="/categories/笔记/">笔记<span>3</span></a></li>
+			<li><a href="/categories/笔记/">笔记<span>4</span></a></li>
 		
 		</ul>
 	</div>
@@ -1004,7 +1413,9 @@ pub fn add(a: i32, b: i32) -&gt; i32 &#123;
 		
 			<li><a href="/tags/Hexo/">Hexo<span>1</span></a></li>
 		
-			<li><a href="/tags/Rust/">Rust<span>1</span></a></li>
+			<li><a href="/tags/Tokio/">Tokio<span>1</span></a></li>
+		
+			<li><a href="/tags/Rust/">Rust<span>2</span></a></li>
 		
 			<li><a href="/tags/git/">git<span>1</span></a></li>
 		
@@ -1020,7 +1431,11 @@ pub fn add(a: i32, b: i32) -&gt; i32 &#123;
   <ul class="entry list-unstyled">
     
       <li>
-        <a href="/2023/08/24/Rust学习笔记/" ><i class="fa fa-file-o"></i>Rust学习笔记</a>
+        <a href="/2023/09/04/Tokio随记/" ><i class="fa fa-file-o"></i>Tokio随记</a>
+      </li>
+    
+      <li>
+        <a href="/2023/08/24/Rust学习笔记/"  title="2023.09.14持续更新笔记,主要是Rust的一些进阶语法" ><i class="fa fa-file-o"></i>Rust学习笔记</a>
       </li>
     
       <li>
