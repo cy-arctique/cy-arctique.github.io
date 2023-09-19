@@ -126,6 +126,64 @@
 <div class="row">
 	<div class="col-md-8">
 		<h3 class="title">
+			<a href="/2023/09/19/关于github失联的咪咪/" >关于github失联的咪咪</a>
+		</h3>
+		</div>
+	<div class="col-md-4">
+		<div class="date">post @ 2023-09-19  </div>
+		</div>
+	</div>
+	
+
+
+			<div class="entry">
+  <div class="row">
+	
+	
+		<p><code>记录一些github的神经报错</code></p>
+<h2 id="Github网页正常访问-提交不了代码"><a href="#Github网页正常访问-提交不了代码" class="headerlink" title="Github网页正常访问, 提交不了代码"></a>Github网页正常访问, 提交不了代码</h2><p>报错信息如下:</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">Connection reset by <span class="token number">20.205</span>.243.166 port <span class="token number">22</span>
+fatal: Could not <span class="token builtin class-name">read</span> from remote repository.
+
+Please <span class="token function">make</span> sure you have the correct access rights
+and the repository exists.<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p>解决方案:</p>
+<p>修改<code>.ssh</code> 目录下的配置文件<code>config</code></p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">Host github.com
+    port <span class="token number">22</span>
+    User <span class="token function">git</span>
+    HostName github.com
+    PreferredAuthentications publickey
+    IdentityFile ~/.ssh/id_rsa
+    <span class="token comment"># 端口号为你开启代理的端口号，这里7890是Clash默认端口号</span>
+    ProxyCommand connect <span class="token parameter variable">-S</span> <span class="token number">127.0</span>.0.1:7890 <span class="token parameter variable">-a</span> none %h %p<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<ul>
+<li>User: 配置使用用户名</li>
+<li>HostName: 真实的域名地址</li>
+<li>PreferredAuthentications: 配置登录时使用什么权限认证, 可选值<code>publickey</code> <code>password</code> <code>keyboard-interactive</code></li>
+<li>IdentityFile: id_rsa密钥的路径</li>
+<li>ProxyCommand: 设置代理<ul>
+<li>-S: 代表走socks代理</li>
+<li>-H: 实现http和https的仓库clone</li>
+<li>%h: 扩展成hostname</li>
+<li>%p: 扩展成port</li>
+</ul>
+</li>
+</ul>
+
+	
+	</div>
+  <a type="button" href="/2023/09/19/关于github失联的咪咪/#more" class="btn btn-default more">阅读此文</a>
+</div>
+
+		
+			
+	
+	<!-- display as entry -->
+<div class="row">
+	<div class="col-md-8">
+		<h3 class="title">
 			<a href="/2023/09/04/Tokio随记/" >Tokio随记</a>
 		</h3>
 		</div>
@@ -1413,7 +1471,7 @@ warning<span class="token punctuation">:</span> unused `<span class="token class
 		
 			<li><a href="/categories/Hexo/">Hexo<span>1</span></a></li>
 		
-			<li><a href="/categories/笔记/">笔记<span>4</span></a></li>
+			<li><a href="/categories/笔记/">笔记<span>5</span></a></li>
 		
 		</ul>
 	</div>
@@ -1424,15 +1482,17 @@ warning<span class="token punctuation">:</span> unused `<span class="token class
 		<h4>标签云</h4>
 		<ul class="tag_box inline list-unstyled">		
 		
-			<li><a href="/tags/git/">git<span>1</span></a></li>
+			<li><a href="/tags/github/">github<span>1</span></a></li>
 		
-			<li><a href="/tags/Tokio/">Tokio<span>1</span></a></li>
+			<li><a href="/tags/git/">git<span>1</span></a></li>
 		
 			<li><a href="/tags/UE5/">UE5<span>1</span></a></li>
 		
-			<li><a href="/tags/Rust/">Rust<span>2</span></a></li>
-		
 			<li><a href="/tags/Hexo/">Hexo<span>1</span></a></li>
+		
+			<li><a href="/tags/Tokio/">Tokio<span>1</span></a></li>
+		
+			<li><a href="/tags/Rust/">Rust<span>2</span></a></li>
 		
 		 
 		</ul>
@@ -1444,6 +1504,10 @@ warning<span class="token punctuation">:</span> unused `<span class="token class
 <div class="widget">
   <h4>最新文章</h4>
   <ul class="entry list-unstyled">
+    
+      <li>
+        <a href="/2023/09/19/关于github失联的咪咪/" ><i class="fa fa-file-o"></i>关于github失联的咪咪</a>
+      </li>
     
       <li>
         <a href="/2023/09/04/Tokio随记/" ><i class="fa fa-file-o"></i>Tokio随记</a>
@@ -1459,10 +1523,6 @@ warning<span class="token punctuation">:</span> unused `<span class="token class
     
       <li>
         <a href="/2023/07/14/Git常用命令/"  title="2023.08.25更新：单选一个提交合并" ><i class="fa fa-file-o"></i>Git常用命令</a>
-      </li>
-    
-      <li>
-        <a href="/2023/07/13/hello-world/"  title="Hexo配置" ><i class="fa fa-file-o"></i>Hello Hexo</a>
       </li>
     
   </ul>

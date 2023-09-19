@@ -6,20 +6,20 @@
   <meta http-equiv="cache-control" content="no-cache">
   <meta http-equiv="expires" content="0">
   
-  <title>UE5随记 | Arctique</title>
+  <title>关于github失联的咪咪 | Arctique</title>
   <meta name="author" content="Arctique">
   
-  <meta name="description" content="设置缓存重置缓存路径将系统默认的设置：所有项目的缓存文件都在系统盘下，修改为在各自项目目录下
-Win系统为例：
+  <meta name="description" content="记录一些github的神经报错
+Github网页正常访问, 提交不了代码报错信息如下:
+Connection reset by 20.205.243.166 port 22
+fatal: Could not read from remote repository.
 
-找到UE5安装路径，例如 A:\UE\UE_5.2\Engine\Config\BaseEngine.ini
-记事本打开 BaseEngine.ini 文件
-搜索关键字符串 ENGINE">
+Please make sure">
   
   
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
-  <meta property="og:title" content="UE5随记"/>
+  <meta property="og:title" content="关于github失联的咪咪"/>
   <meta property="og:site_name" content="Arctique"/>
 
   
@@ -108,7 +108,7 @@ Win系统为例：
 
 	
 		<div class="page-header">
-			<h1> UE5随记</h1>
+			<h1> 关于github失联的咪咪</h1>
 		</div>
 	
 
@@ -125,17 +125,37 @@ Win系统为例：
 	<div class="mypage">		
 	  		
 
-	  <h2 id="设置缓存"><a href="#设置缓存" class="headerlink" title="设置缓存"></a>设置缓存</h2><h3 id="重置缓存路径"><a href="#重置缓存路径" class="headerlink" title="重置缓存路径"></a>重置缓存路径</h3><p>将系统默认的设置：所有项目的缓存文件都在系统盘下，修改为在各自项目目录下</p>
-<p>Win系统为例：</p>
+	  <p><code>记录一些github的神经报错</code></p>
+<h2 id="Github网页正常访问-提交不了代码"><a href="#Github网页正常访问-提交不了代码" class="headerlink" title="Github网页正常访问, 提交不了代码"></a>Github网页正常访问, 提交不了代码</h2><p>报错信息如下:</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">Connection reset by <span class="token number">20.205</span>.243.166 port <span class="token number">22</span>
+fatal: Could not <span class="token builtin class-name">read</span> from remote repository.
+
+Please <span class="token function">make</span> sure you have the correct access rights
+and the repository exists.<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p>解决方案:</p>
+<p>修改<code>.ssh</code> 目录下的配置文件<code>config</code></p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">Host github.com
+    port <span class="token number">22</span>
+    User <span class="token function">git</span>
+    HostName github.com
+    PreferredAuthentications publickey
+    IdentityFile ~/.ssh/id_rsa
+    <span class="token comment"># 端口号为你开启代理的端口号，这里7890是Clash默认端口号</span>
+    ProxyCommand connect <span class="token parameter variable">-S</span> <span class="token number">127.0</span>.0.1:7890 <span class="token parameter variable">-a</span> none %h %p<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 <ul>
-<li>找到UE5安装路径，例如 <code>A:\UE\UE_5.2\Engine\Config\BaseEngine.ini</code></li>
-<li>记事本打开 <code>BaseEngine.ini</code> 文件</li>
-<li>搜索关键字符串 <code>ENGINEVERSIONAGNOSTICUSERDIR%DerivedDataCache</code></li>
-<li>将上一步骤搜索的字符串替换成 <code>GAMEDIR%DerivedDataCache</code></li>
+<li>User: 配置使用用户名</li>
+<li>HostName: 真实的域名地址</li>
+<li>PreferredAuthentications: 配置登录时使用什么权限认证, 可选值<code>publickey</code> <code>password</code> <code>keyboard-interactive</code></li>
+<li>IdentityFile: id_rsa密钥的路径</li>
+<li>ProxyCommand: 设置代理<ul>
+<li>-S: 代表走socks代理</li>
+<li>-H: 实现http和https的仓库clone</li>
+<li>%h: 扩展成hostname</li>
+<li>%p: 扩展成port</li>
 </ul>
-<h3 id="可删除缓存信息"><a href="#可删除缓存信息" class="headerlink" title="可删除缓存信息"></a>可删除缓存信息</h3><p>可删除的缓存信息在此目录下：<code>C:\Users\Arctique\AppData\Local\UnrealEngine\Common\DerivedDataCache</code></p>
-<h3 id="UE项目版本管理"><a href="#UE项目版本管理" class="headerlink" title="UE项目版本管理"></a>UE项目版本管理</h3><p>使用Git作为项目版本管理，还需要下载<code>git lfs</code></p>
-<p>初始化完成项目仓库之后，项目根目录会生成对应的版本版本管理文件<code>.gitattributes</code>。需要在此配置文件中添加以下配置：<code>*.uassert filter=lfs diff=lfs merge=lfs -text</code></p>
+</li>
+</ul>
 
 	  <div class="article-footer-copyright">
 
@@ -145,7 +165,7 @@ Win系统为例：
 	</div>
 
 	
-	<span id="/2023/08/16/UE5%E9%9A%8F%E8%AE%B0/" class="leancloud-visitors view" data-flag-title="UE5随记">
+	<span id="/2023/09/19/%E5%85%B3%E4%BA%8Egithub%E5%A4%B1%E8%81%94%E7%9A%84%E5%92%AA%E5%92%AA/" class="leancloud-visitors view" data-flag-title="关于github失联的咪咪">
 		<em class="post-meta-item-text"> Page View </em> <i class="leancloud-visitors-count"></i>
 	</span>
 	
@@ -157,13 +177,12 @@ Win系统为例：
 
     
     
-    <a href="/2023/08/24/Rust学习笔记/" type="button" class="btn btn-default"><i
-                class="fa fa-arrow-circle-o-left"></i> 上一页</a>
+    <a type="button" class="btn btn-default disabled"><i class="fa fa-arrow-circle-o-left"></i>上一页</a>
     
 
     <a href="/" type="button" class="btn btn-default"><i class="fa fa-home"></i>Home</a>
     
-    <a href="/2023/07/14/Git常用命令/" type="button" class="btn btn-default ">下一页<i
+    <a href="/2023/09/04/Tokio随记/" type="button" class="btn btn-default ">下一页<i
                 class="fa fa-arrow-circle-o-right"></i></a>
     
 
@@ -222,7 +241,7 @@ new Valine(valineConfig);
 	
 	<div class="meta-widget">
 	<i class="fa fa-clock-o"></i>
-	2023-08-16 
+	2023-09-19 
 	</div>
 	
 
@@ -246,19 +265,13 @@ new Valine(valineConfig);
 	<a data-toggle="collapse" data-target="#tags"><i class="fa fa-tags"></i></a>		  
     <ul id="tags" class="tag_box list-unstyled collapse in">	  
 	    
-  <li><a href="/tags/UE5/">UE5<span>1</span></a></li>
+  <li><a href="/tags/github/">github<span>1</span></a></li>
     </ul>
 	</div>
 		
 
 	<!-- toc -->
 	<div class="meta-widget">
-	
-	   <a data-toggle="collapse" data-target="#toc"><i class="fa fa-bars"></i></a>
-	   <div id="toc" class="toc collapse in">
-		   <span class="toc-title">Contents</span>
-			<ol class="toc-article"><li class="toc-article-item toc-article-level-2"><a class="toc-article-link" href="#%E8%AE%BE%E7%BD%AE%E7%BC%93%E5%AD%98"><span class="toc-article-text">设置缓存</span></a><ol class="toc-article-child"><li class="toc-article-item toc-article-level-3"><a class="toc-article-link" href="#%E9%87%8D%E7%BD%AE%E7%BC%93%E5%AD%98%E8%B7%AF%E5%BE%84"><span class="toc-article-text">重置缓存路径</span></a></li><li class="toc-article-item toc-article-level-3"><a class="toc-article-link" href="#%E5%8F%AF%E5%88%A0%E9%99%A4%E7%BC%93%E5%AD%98%E4%BF%A1%E6%81%AF"><span class="toc-article-text">可删除缓存信息</span></a></li><li class="toc-article-item toc-article-level-3"><a class="toc-article-link" href="#UE%E9%A1%B9%E7%9B%AE%E7%89%88%E6%9C%AC%E7%AE%A1%E7%90%86"><span class="toc-article-text">UE项目版本管理</span></a></li></ol></li></ol>
-		</div>
 	
 	</div>
 	
