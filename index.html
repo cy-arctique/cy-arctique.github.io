@@ -1145,7 +1145,22 @@ warning<span class="token punctuation">:</span> unused `<span class="token class
 <li>类型的大小在编译期无法确定，但是我们又需要固定大小的类型时</li>
 <li>特征对象，用于说明对象实现了一个特征，而不是某个特定的类型</li>
 </ul>
+<h2 id="Drop"><a href="#Drop" class="headerlink" title="Drop"></a>Drop</h2><p><code>互斥的Copy和Drop</code></p>
+<p>我们无法为一个类型同时实现<code>Copy</code> 和<code>Drop</code> 特征. 因为实现了<code>Copy</code> 的特征会被编译器隐式的复制, 因此非常难以预测析构函数执行的时间和频率. 因此这些实现了<code>Copy</code> 的类型无法拥有析构函数</p>
+<pre class="line-numbers language-rust" data-language="rust"><code class="language-rust"><span class="token attribute attr-name">#[derice(Debug)]</span>
+<span class="token keyword">struct</span> <span class="token type-definition class-name">Foo</span><span class="token punctuation">;</span>
 
+<span class="token keyword">impl</span> <span class="token class-name">Drop</span> <span class="token keyword">for</span> <span class="token class-name">Foo</span> <span class="token punctuation">&#123;</span>
+    <span class="token keyword">fn</span> <span class="token function-definition function">drop</span><span class="token punctuation">(</span><span class="token operator">&amp;</span><span class="token keyword">mut</span> <span class="token keyword">self</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+        <span class="token macro property">println!</span><span class="token punctuation">(</span><span class="token string">"Deopping Foo!"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">&#125;</span>
+<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>以上代码报错如下:</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">error<span class="token punctuation">[</span>E0184<span class="token punctuation">]</span>: the trait <span class="token variable"><span class="token variable">`</span>Copy<span class="token variable">`</span></span> may not be implemented <span class="token keyword">for</span> this <span class="token builtin class-name">type</span><span class="token punctuation">;</span> the <span class="token builtin class-name">type</span> has a destructor
+  --<span class="token operator">></span> src/main.rs:24:10
+   <span class="token operator">|</span>
+<span class="token number">24</span> <span class="token operator">|</span> <span class="token comment">#[derive(Copy)]</span>
+   <span class="token operator">|</span>          ^^^^ Copy not allowed on types with destructors<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 	
 	</div>
   <a type="button" href="/2023/08/24/Rust学习笔记/#more" class="btn btn-default more">阅读此文</a>
@@ -1409,13 +1424,13 @@ warning<span class="token punctuation">:</span> unused `<span class="token class
 		<h4>标签云</h4>
 		<ul class="tag_box inline list-unstyled">		
 		
-			<li><a href="/tags/Rust/">Rust<span>2</span></a></li>
-		
 			<li><a href="/tags/git/">git<span>1</span></a></li>
+		
+			<li><a href="/tags/Tokio/">Tokio<span>1</span></a></li>
 		
 			<li><a href="/tags/UE5/">UE5<span>1</span></a></li>
 		
-			<li><a href="/tags/Tokio/">Tokio<span>1</span></a></li>
+			<li><a href="/tags/Rust/">Rust<span>2</span></a></li>
 		
 			<li><a href="/tags/Hexo/">Hexo<span>1</span></a></li>
 		
