@@ -1219,6 +1219,327 @@ warning<span class="token punctuation">:</span> unused `<span class="token class
    <span class="token operator">|</span>
 <span class="token number">24</span> <span class="token operator">|</span> <span class="token comment">#[derive(Copy)]</span>
    <span class="token operator">|</span>          ^^^^ Copy not allowed on types with destructors<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<h2 id="关于Rc的简单总结"><a href="#关于Rc的简单总结" class="headerlink" title="关于Rc的简单总结"></a>关于Rc的简单总结</h2><ul>
+<li>Rc&#x2F;Arc 是不可变引用, 无法修改它指向的值, 只能进行读取, 如果要修改, 需要配合内部可变性RefCell 或互斥锁Mutex</li>
+<li>一旦最后一个拥有者消失, 则资源会自动被回收, 这个生命周期是在编译器就确定下来的</li>
+<li>Rc 只能用于同一线程内部, 想要用于线程之间的对象共享, 需要使用Arc</li>
+<li>Rc<T> 是一个智能指针, 实现了Deref 特征, 因此无需先解开Rc 指针, 再使用里面的T, 而是可以直接使用T</li>
+</ul>
+<h2 id="Arc的性能损耗"><a href="#Arc的性能损耗" class="headerlink" title="Arc的性能损耗"></a>Arc的性能损耗</h2><p>原子化可以带来线程安全, 但是都会伴随着性能损耗, 而且这种性能损耗还不小</p>
+<h2 id="Cell"><a href="#Cell" class="headerlink" title="Cell"></a>Cell</h2><p>Cell 和 RefCell 在功能上没有区别，区别在于 Cell<T> 适用于 T 实现 Copy 的情况:</p>
+<pre class="line-numbers language-rust" data-language="rust"><code class="language-rust"><span class="token keyword">use</span> <span class="token namespace">std<span class="token punctuation">::</span>cell<span class="token punctuation">::</span></span><span class="token class-name">Cell</span><span class="token punctuation">;</span>
+<span class="token keyword">fn</span> <span class="token function-definition function">main</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+  <span class="token keyword">let</span> c <span class="token operator">=</span> <span class="token class-name">Cell</span><span class="token punctuation">::</span><span class="token function">new</span><span class="token punctuation">(</span><span class="token string">"asdf"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token keyword">let</span> one <span class="token operator">=</span> c<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  c<span class="token punctuation">.</span><span class="token function">set</span><span class="token punctuation">(</span><span class="token string">"qwer"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token keyword">let</span> two <span class="token operator">=</span> c<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token macro property">println!</span><span class="token punctuation">(</span><span class="token string">"&#123;&#125;,&#123;&#125;"</span><span class="token punctuation">,</span> one<span class="token punctuation">,</span> two<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p><code>注意:</code></p>
+<p><code>Cell</code> 智能指针跟上面笔记的智能指针有点不太一样的用法, 如例子所示, 获取指针的值是使用<code>get</code>, 设置指针的值是使用<code>set</code></p>
+<p>而且获取到值之后还可以设置值? 这个貌似是违背了Rust的借用规则? (应该是的(bushi))</p>
+<h3 id="通过Cell-from-mut解决借用冲突"><a href="#通过Cell-from-mut解决借用冲突" class="headerlink" title="通过Cell::from_mut解决借用冲突"></a>通过Cell::from_mut解决借用冲突</h3><p>在Rust1.37版本中新增了两个非常使用的方法:</p>
+<ul>
+<li>Cell::from_mut，该方法将 &amp;mut T 转为 &amp;Cell<T></li>
+<li>Cell::as_slice_of_cells，该方法将 &amp;Cell&lt;[T]&gt; 转为 &amp;[Cell<T>]<pre class="line-numbers language-rust" data-language="rust"><code class="language-rust"><span class="token keyword">fn</span> <span class="token function-definition function">is_even</span><span class="token punctuation">(</span>i<span class="token punctuation">:</span> <span class="token keyword">i32</span><span class="token punctuation">)</span> <span class="token punctuation">-></span> <span class="token keyword">bool</span> <span class="token punctuation">&#123;</span>
+    i <span class="token operator">%</span> <span class="token number">2</span> <span class="token operator">==</span> <span class="token number">0</span>
+<span class="token punctuation">&#125;</span>
+
+<span class="token keyword">fn</span> <span class="token function-definition function">retain_even</span><span class="token punctuation">(</span>nums<span class="token punctuation">:</span> <span class="token operator">&amp;</span><span class="token keyword">mut</span> <span class="token class-name">Vec</span><span class="token operator">&lt;</span><span class="token keyword">i32</span><span class="token operator">></span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+    <span class="token keyword">let</span> <span class="token keyword">mut</span> i <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>
+    <span class="token keyword">for</span> num <span class="token keyword">in</span> nums<span class="token punctuation">.</span><span class="token function">iter</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">filter</span><span class="token punctuation">(</span><span class="token closure-params"><span class="token closure-punctuation punctuation">|</span><span class="token operator">&amp;</span>num<span class="token closure-punctuation punctuation">|</span></span> <span class="token function">is_even</span><span class="token punctuation">(</span><span class="token operator">*</span>num<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+        nums<span class="token punctuation">[</span>i<span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token operator">*</span>num<span class="token punctuation">;</span>
+        i <span class="token operator">+=</span> <span class="token number">1</span><span class="token punctuation">;</span>
+    <span class="token punctuation">&#125;</span>
+    nums<span class="token punctuation">.</span><span class="token function">truncate</span><span class="token punctuation">(</span>i<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">&#125;</span>
+
+<span class="token comment">// 解决办法</span>
+<span class="token keyword">fn</span> <span class="token function-definition function">retain_even</span><span class="token punctuation">(</span>nums<span class="token punctuation">:</span> <span class="token operator">&amp;</span><span class="token keyword">mut</span> <span class="token class-name">Vec</span><span class="token operator">&lt;</span><span class="token keyword">i32</span><span class="token operator">></span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+    <span class="token keyword">let</span> <span class="token keyword">mut</span> i <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>
+    <span class="token keyword">for</span> j <span class="token keyword">in</span> <span class="token number">0</span><span class="token punctuation">..</span>nums<span class="token punctuation">.</span><span class="token function">len</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+        <span class="token keyword">if</span> <span class="token function">is_even</span><span class="token punctuation">(</span>nums<span class="token punctuation">[</span>j<span class="token punctuation">]</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+            nums<span class="token punctuation">[</span>i<span class="token punctuation">]</span> <span class="token operator">=</span> nums<span class="token punctuation">[</span>j<span class="token punctuation">]</span><span class="token punctuation">;</span>
+            i <span class="token operator">+=</span> <span class="token number">1</span><span class="token punctuation">;</span>
+        <span class="token punctuation">&#125;</span>
+    <span class="token punctuation">&#125;</span>
+    nums<span class="token punctuation">.</span><span class="token function">truncate</span><span class="token punctuation">(</span>i<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">&#125;</span>
+
+<span class="token comment">// Cell解决</span>
+<span class="token keyword">use</span> <span class="token namespace">std<span class="token punctuation">::</span>cell<span class="token punctuation">::</span></span><span class="token class-name">Cell</span><span class="token punctuation">;</span>
+
+<span class="token keyword">fn</span> <span class="token function-definition function">retain_even</span><span class="token punctuation">(</span>nums<span class="token punctuation">:</span> <span class="token operator">&amp;</span><span class="token keyword">mut</span> <span class="token class-name">Vec</span><span class="token operator">&lt;</span><span class="token keyword">i32</span><span class="token operator">></span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+    <span class="token keyword">let</span> slice<span class="token punctuation">:</span> <span class="token operator">&amp;</span><span class="token punctuation">[</span><span class="token class-name">Cell</span><span class="token operator">&lt;</span><span class="token keyword">i32</span><span class="token operator">></span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token class-name">Cell</span><span class="token punctuation">::</span><span class="token function">from_mut</span><span class="token punctuation">(</span><span class="token operator">&amp;</span><span class="token keyword">mut</span> nums<span class="token punctuation">[</span><span class="token punctuation">..</span><span class="token punctuation">]</span><span class="token punctuation">)</span>
+        <span class="token punctuation">.</span><span class="token function">as_slice_of_cells</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token keyword">let</span> <span class="token keyword">mut</span> i <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>
+    <span class="token keyword">for</span> num <span class="token keyword">in</span> slice<span class="token punctuation">.</span><span class="token function">iter</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">filter</span><span class="token punctuation">(</span><span class="token closure-params"><span class="token closure-punctuation punctuation">|</span>num<span class="token closure-punctuation punctuation">|</span></span> <span class="token function">is_even</span><span class="token punctuation">(</span>num<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+        slice<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">.</span><span class="token function">set</span><span class="token punctuation">(</span>num<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        i <span class="token operator">+=</span> <span class="token number">1</span><span class="token punctuation">;</span>
+    <span class="token punctuation">&#125;</span>
+
+    nums<span class="token punctuation">.</span><span class="token function">truncate</span><span class="token punctuation">(</span>i<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre></li>
+</ul>
+<h2 id="RefCell"><a href="#RefCell" class="headerlink" title="RefCell"></a>RefCell</h2><p>由于 Cell 类型针对的是实现了 Copy 特征的值类型，因此在实际开发中，Cell 使用的并不多，因为我们要解决的往往是可变、不可变引用共存导致的问题，此时就需要借助于 RefCell 来达成目的</p>
+<p>所有权, 借用规则与智能指针的对比:</p>
+<table>
+<thead>
+<tr>
+<th>Rust规则</th>
+<th>智能指针带来的额外规则</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>一个数据只有一个所有者</td>
+<td><code>Rc/Arc</code> 让一个数据可以拥有多个所有者</td>
+</tr>
+<tr>
+<td>要么多个不可变借用, 要么一个可变借用</td>
+<td><code>RefCell</code> 实现编译器可变, 不可变引用共存</td>
+</tr>
+<tr>
+<td>违背规则导致编译错误</td>
+<td>违背规则导致运行时<code>panic</code></td>
+</tr>
+</tbody></table>
+<p>可以看出, <code>Rc/Arc</code> 和<code>RefCell</code> 合在一起, 解决了Rust中严苛的所有权和借用规则带来的某些场景下难使用的问题. 但是它们并不是银弹, 例如<code>RefCell</code> 实际上并没有解决可变引用和不可变引用共存的问题, 只是将报错从编译期推迟到运行时, 从编译器错误变成了<code>panic</code> 异常:</p>
+<pre class="line-numbers language-rust" data-language="rust"><code class="language-rust"><span class="token keyword">use</span> <span class="token namespace">std<span class="token punctuation">::</span>cell<span class="token punctuation">::</span></span><span class="token class-name">RefCell</span><span class="token punctuation">;</span>
+
+<span class="token keyword">fn</span> <span class="token function-definition function">main</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+    <span class="token keyword">let</span> s <span class="token operator">=</span> <span class="token class-name">RefCell</span><span class="token punctuation">::</span><span class="token function">new</span><span class="token punctuation">(</span><span class="token class-name">String</span><span class="token punctuation">::</span><span class="token function">from</span><span class="token punctuation">(</span><span class="token string">"hello, world"</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">let</span> s1 <span class="token operator">=</span> s<span class="token punctuation">.</span><span class="token function">borrow</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">let</span> s2 <span class="token operator">=</span> s<span class="token punctuation">.</span><span class="token function">borrow_mut</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token macro property">println!</span><span class="token punctuation">(</span><span class="token string">"&#123;&#125;,&#123;&#125;"</span><span class="token punctuation">,</span> s1<span class="token punctuation">,</span> s2<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">thread <span class="token string">'main'</span> panicked at <span class="token string">'already borrowed: BorrowMutError'</span>, src/main.rs:6:16
+note: run with <span class="token variable"><span class="token variable">`</span><span class="token assign-left variable">RUST_BACKTRACE</span><span class="token operator">=</span><span class="token number">1</span><span class="token variable">`</span></span> environment variable to display a backtrace<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+<p>但是依然会因为违背了借用规则导致了运行期<code>panic</code></p>
+<p>当确信编译器误报但不知道如何解决时, 或者有一个引用类型, 需要被四处使用和修改然后导致借用关系难以管理时, 可以优先考虑使用<code>RefCell</code></p>
+<h3 id="RefCell简单总结"><a href="#RefCell简单总结" class="headerlink" title="RefCell简单总结"></a>RefCell简单总结</h3><ul>
+<li>与Cell用于可Copy的值不同, RefCell用于引用</li>
+<li>RefCell只是将借用规则从编译期推迟到程序运行期, 并不能帮你绕过这个规则</li>
+<li>RefCell适用于编译期误报或者一个引用被在多处代码使用, 修改以至于难于管理借用关系时</li>
+<li>使用RefCell时, 违背借用规则会导致运行期的panic</li>
+</ul>
+<h3 id="选择Cell还是RefCell"><a href="#选择Cell还是RefCell" class="headerlink" title="选择Cell还是RefCell"></a>选择Cell还是RefCell</h3><ul>
+<li>Cell只适用于Copy类型, 用于提供值, 而RefCell用于提供引用</li>
+<li>Cell不会panic, 而RefCell会</li>
+</ul>
+<h3 id="Rc-RefCell组合使用"><a href="#Rc-RefCell组合使用" class="headerlink" title="Rc + RefCell组合使用"></a>Rc + RefCell组合使用</h3><p>在Rust中, 一个常见的组合就是Rc 和RefCell 在一起使用, 前者可以实现一个数据拥有多个所有者, 后者可以实现数据的可变性: </p>
+<pre class="line-numbers language-rust" data-language="rust"><code class="language-rust"><span class="token keyword">use</span> <span class="token namespace">std<span class="token punctuation">::</span>cell<span class="token punctuation">::</span></span><span class="token class-name">RefCell</span><span class="token punctuation">;</span>
+<span class="token keyword">use</span> <span class="token namespace">std<span class="token punctuation">::</span>rc<span class="token punctuation">::</span></span><span class="token class-name">Rc</span><span class="token punctuation">;</span>
+<span class="token keyword">fn</span> <span class="token function-definition function">main</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+    <span class="token keyword">let</span> s <span class="token operator">=</span> <span class="token class-name">Rc</span><span class="token punctuation">::</span><span class="token function">new</span><span class="token punctuation">(</span><span class="token class-name">RefCell</span><span class="token punctuation">::</span><span class="token function">new</span><span class="token punctuation">(</span><span class="token string">"我很善变，还拥有多个主人"</span><span class="token punctuation">.</span><span class="token function">to_string</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token keyword">let</span> s1 <span class="token operator">=</span> s<span class="token punctuation">.</span><span class="token function">clone</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">let</span> s2 <span class="token operator">=</span> s<span class="token punctuation">.</span><span class="token function">clone</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token comment">// let mut s2 = s.borrow_mut();</span>
+    s2<span class="token punctuation">.</span><span class="token function">borrow_mut</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">push_str</span><span class="token punctuation">(</span><span class="token string">", oh yeah!"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token macro property">println!</span><span class="token punctuation">(</span><span class="token string">"&#123;:?&#125;\n&#123;:?&#125;\n&#123;:?&#125;"</span><span class="token punctuation">,</span> s<span class="token punctuation">,</span> s1<span class="token punctuation">,</span> s2<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<h3 id="CPU损耗"><a href="#CPU损耗" class="headerlink" title="CPU损耗"></a>CPU损耗</h3><ul>
+<li>对 Rc<T> 解引用是免费的（编译期），但是 * 带来的间接取值并不免费</li>
+<li>克隆 Rc<T> 需要将当前的引用计数跟 0 和 usize::Max 进行一次比较，然后将计数值加 1</li>
+<li>释放（drop） Rc<T> 需要将计数值减 1， 然后跟 0 进行一次比较</li>
+<li>对 RefCell 进行不可变借用，需要将 isize 类型的借用计数加 1，然后跟 0 进行比较</li>
+<li>对 RefCell 的不可变借用进行释放，需要将 isize 减 1</li>
+<li>对 RefCell 的可变借用大致流程跟上面差不多，但是需要先跟 0 比较，然后再减 1</li>
+<li>对 RefCell 的可变借用进行释放，需要将 isize 加 1</li>
+</ul>
+<h2 id="多线程并发编程"><a href="#多线程并发编程" class="headerlink" title="多线程并发编程"></a>多线程并发编程</h2><h3 id="CPU多核"><a href="#CPU多核" class="headerlink" title="CPU多核"></a>CPU多核</h3><p>并行一定是并发, 反之并发只有在多核时才可能并行</p>
+<h4 id="单核心并发"><a href="#单核心并发" class="headerlink" title="单核心并发"></a>单核心并发</h4><p>关键在于: 快速轮换处理不同的任务, 给用户带来所有任务同时在运行的假象</p>
+<h4 id="多核心并行"><a href="#多核心并行" class="headerlink" title="多核心并行"></a>多核心并行</h4><p>当CPU核心增多到N时, 那么同一时间就能有N个任务被处理, 那么我们的并行度就是N, 相应的处理效率也就变成了单核心的N倍(实际情况并没有这么高)</p>
+<h4 id="多核心并发"><a href="#多核心并发" class="headerlink" title="多核心并发"></a>多核心并发</h4><p>当核心增多到N时, 操作系统同时进行的任务肯定远不止N个, 这些任务将被放入M个线程队列中, 接着交给N个CPU核心去执行, 最后实现了M:N的处理模型, 在这种情况下, <code>并发与并行是同时发生的, 所有用户任务从表面来看都是并发的运行, 但实际上, 同一时刻只有N个任务能被同时并行的处理</code></p>
+<ul>
+<li>如果某个系统支持两个或多个动作的<code>同时存在</code>, 那么这个系统就是一个并发系统</li>
+<li>如果某个系统支持两个或多个动作的<code>同时执行</code>, 那么这个系统就是一个并行系统</li>
+</ul>
+<p>在并发程序中可以同时拥有两个或多个线程. 这意味着, 如果程序在单核处理器上运行, 那么这两个线程将交替地换入或换出内存. 这些线程是<code>同时&quot;存在&quot;</code>的 – 每个线程都是处于执行过程中的某个状态. 如果程序能够并行执行, 那么就一定是运行在多核处理器上. 此时, 程序中的每个线程都将分配到一个独立的处理器核心上, 因此可以同时运行</p>
+<p>所以, <code>&quot;并行&quot;概念是&quot;并发&quot;概念的一个子集</code>. 也就是说, 编写一个拥有多线程或者进程的并发程序, 但如果没有多核处理器来执行这个程序, 那么就不能以并行的方式运行代码. 因此, 凡是在求解单个问题时涉及多个执行流程的编程模式或者执行行为, 都属于并发编程的范畴</p>
+<h3 id="编程语言的并发模型"><a href="#编程语言的并发模型" class="headerlink" title="编程语言的并发模型"></a>编程语言的并发模型</h3><ul>
+<li>由于操作系统提供了创建线程的API, 因此部分语言会直接调用该API来创建线程, 因此最终程序内的线程和该程序占用的操作系统线程相等, 一般称之为1:1线程模型, 例如Rust</li>
+<li>还有些语言的内部实现了自己的线程模型(绿色线程, 协程), 程序内部的M个线程最后会以某种隐射方式使用N个操作系统线程去运行, 因此称之为M:N现成模型, 其中M和N并没有特定的彼此限制关系. 一个典型的代表就是Go语言</li>
+<li>还有写语言使用了Actor模型, 基于消息传递进行并行, 例如Erlang语言</li>
+</ul>
+<p>绿色线程&#x2F;协程的视线会显著增大运行时的大小, 因此Rust只在标准库中提供了1:1的线程模型, 如果你愿意牺牲一些性能来换取更精确的线程控制以及更小的线程上下文切换成本, 那么可以使用Rust中的M:N模型, 这些模型由三方库提供了实现, 例如大名鼎鼎的tokio</p>
+<h3 id="使用线程"><a href="#使用线程" class="headerlink" title="使用线程"></a>使用线程</h3><p>由于多线程的代码是同时运行的，因此我们无法保证线程间的执行顺序，这会导致一些问题：</p>
+<ul>
+<li>竞态条件(race conditions)，多个线程以非一致性的顺序同时访问数据资源</li>
+<li>死锁(deadlocks)，两个线程都想使用某个资源，但是又都在等待对方释放资源后才能使用，结果最终都无法继续执行</li>
+<li>一些因为多线程导致的很隐晦的 BUG，难以复现和解决</li>
+</ul>
+<h4 id="多线程的性能"><a href="#多线程的性能" class="headerlink" title="多线程的性能"></a>多线程的性能</h4><h5 id="创建线程的性能"><a href="#创建线程的性能" class="headerlink" title="创建线程的性能"></a>创建线程的性能</h5><p>据不精确估算, 创建一个线程大概需要0.24毫秒, 随着线程的变多, 这个值会变得更大, 因此线程的创建耗时是不可忽略的, 只有当真的需要处理一个值得用线程去处理的任务时, 才使用线程, 一些鸡毛蒜皮的任务, 就无需创建线程了</p>
+<h5 id="创建多少线程合适"><a href="#创建多少线程合适" class="headerlink" title="创建多少线程合适"></a>创建多少线程合适</h5><p>因为CPU的核心数限制, 当任务是CPU密集型时, 就算线程数超过CPU核心数, 也并不能帮你获得更好的性能, 因为每个线程的任务都可以轻松让CPU的某个核心跑满, 既然如此, 让线程数等于CPU核心数是最好的</p>
+<p>但是当你的任务大部分时间都处于阻塞状态时, 就可以考虑增加多线程数量, 这样当某个线程处于阻塞状态时, 会被切走, 进而运行其它的线程, 典型就是网络IO操作, 我们可以为每一个进来的用户连接创建一个线程去处理, 该连接绝大部分时间都是处于IO读取阻塞状态, 因此有限的CPU核心完全可以处理成百上千的用户连接线程, 但是事实上, 对于这种网络IO情况, 一般都不再使用多线程的方式了, 毕竟操作系统的线程数是有限的, 意味着并发数也很容易达到上限, 而且过多的线程也会导致线程上下文切换的代价过大, 使用<code>async/await</code>的<code>M:N</code> 并发模型, 就没有这个烦恼</p>
+<h5 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h5><p>Rust 的线程模式是1:1模型, 因为Rust要保持尽量小的运行时</p>
+<p>使用thread::spawn来创建线程, 创建出的多个线程之间并不存在执行顺序关系, 因此代码逻辑千万不要依赖于线程间的执行顺序</p>
+<p>main 线程若是结束, 则所有子线程都将被终止, 如果希望等待子线程结束后, 再结束main 线程, 需要使用创建线程时返回的句柄join 方法</p>
+<p>在线程中无法直接借用外部环境中的变量值, 因为新线程的启动时间和结束时间点是不确定的, 所以Rust 无法保证该线程中借用的变量在使用过程中依然是合法的. 可以使用move 关键字将变量的所有权转移给新的线程来解决此问题</p>
+<p>父线程结束后, 子线程仍在持续运行, 直到子线程的代码运行完成或者main 线程的结束</p>
+<h3 id="线程间的消息传递"><a href="#线程间的消息传递" class="headerlink" title="线程间的消息传递"></a>线程间的消息传递</h3><h4 id="多发送者-单接受者"><a href="#多发送者-单接受者" class="headerlink" title="多发送者, 单接受者"></a>多发送者, 单接受者</h4><p>标准库提供了通道<code>std::sync::mpsc</code>, 其中<code>mpsc</code> 是<code>multiple producer, single consumer</code> 的缩写, 代表了该通道支持多个发送者, 但是只支持唯一的接收者. 当然, 支持多个发送者也就意味着支持单个发送者</p>
+<h3 id="同步和异步的通道"><a href="#同步和异步的通道" class="headerlink" title="同步和异步的通道"></a>同步和异步的通道</h3><p>Rust标准库的<code>mpsc</code> 通道其实氛围两种类型: 同步和异步</p>
+<h4 id="异步通道"><a href="#异步通道" class="headerlink" title="异步通道"></a>异步通道</h4><p>上述的例子都是使用的异步通道: 无论接收者是否正在接收消息, 消息发送者在发送消息的时候都不会阻塞</p>
+<pre class="line-numbers language-rust" data-language="rust"><code class="language-rust"><span class="token keyword">use</span> <span class="token namespace">std<span class="token punctuation">::</span>sync<span class="token punctuation">::</span></span>mpsc<span class="token punctuation">;</span>
+<span class="token keyword">use</span> <span class="token namespace">std<span class="token punctuation">::</span></span>thread<span class="token punctuation">;</span>
+<span class="token keyword">use</span> <span class="token namespace">std<span class="token punctuation">::</span>time<span class="token punctuation">::</span></span><span class="token class-name">Duration</span><span class="token punctuation">;</span>
+<span class="token keyword">fn</span> <span class="token function-definition function">main</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+    <span class="token keyword">let</span> <span class="token punctuation">(</span>tx<span class="token punctuation">,</span> rx<span class="token punctuation">)</span><span class="token operator">=</span> <span class="token namespace">mpsc<span class="token punctuation">::</span></span><span class="token function">channel</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token keyword">let</span> handle <span class="token operator">=</span> <span class="token namespace">thread<span class="token punctuation">::</span></span><span class="token function">spawn</span><span class="token punctuation">(</span><span class="token keyword">move</span> <span class="token closure-params"><span class="token closure-punctuation punctuation">|</span><span class="token closure-punctuation punctuation">|</span></span> <span class="token punctuation">&#123;</span>
+        <span class="token macro property">println!</span><span class="token punctuation">(</span><span class="token string">"发送之前"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        tx<span class="token punctuation">.</span><span class="token function">send</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">unwrap</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token macro property">println!</span><span class="token punctuation">(</span><span class="token string">"发送之后"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">&#125;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token macro property">println!</span><span class="token punctuation">(</span><span class="token string">"睡眠之前"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token namespace">thread<span class="token punctuation">::</span></span><span class="token function">sleep</span><span class="token punctuation">(</span><span class="token class-name">Duration</span><span class="token punctuation">::</span><span class="token function">from_secs</span><span class="token punctuation">(</span><span class="token number">3</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token macro property">println!</span><span class="token punctuation">(</span><span class="token string">"睡眠之后"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token macro property">println!</span><span class="token punctuation">(</span><span class="token string">"receive &#123;&#125;"</span><span class="token punctuation">,</span> rx<span class="token punctuation">.</span><span class="token function">recv</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">unwrap</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    handle<span class="token punctuation">.</span><span class="token function">join</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">unwrap</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<h4 id="同步通道"><a href="#同步通道" class="headerlink" title="同步通道"></a>同步通道</h4><p>与异步通道相反, 同步通道发送消息是阻塞的, 只有在消息被接收后才接触阻塞</p>
+<pre class="line-numbers language-rust" data-language="rust"><code class="language-rust"><span class="token keyword">use</span> <span class="token namespace">std<span class="token punctuation">::</span>sync<span class="token punctuation">::</span></span>mpsc<span class="token punctuation">;</span>
+<span class="token keyword">use</span> <span class="token namespace">std<span class="token punctuation">::</span></span>thread<span class="token punctuation">;</span>
+<span class="token keyword">use</span> <span class="token namespace">std<span class="token punctuation">::</span>time<span class="token punctuation">::</span></span><span class="token class-name">Duration</span><span class="token punctuation">;</span>
+<span class="token keyword">fn</span> <span class="token function-definition function">main</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+    <span class="token keyword">let</span> <span class="token punctuation">(</span>tx<span class="token punctuation">,</span> rx<span class="token punctuation">)</span><span class="token operator">=</span> <span class="token namespace">mpsc<span class="token punctuation">::</span></span><span class="token function">sync_channel</span><span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token keyword">let</span> handle <span class="token operator">=</span> <span class="token namespace">thread<span class="token punctuation">::</span></span><span class="token function">spawn</span><span class="token punctuation">(</span><span class="token keyword">move</span> <span class="token closure-params"><span class="token closure-punctuation punctuation">|</span><span class="token closure-punctuation punctuation">|</span></span> <span class="token punctuation">&#123;</span>
+        <span class="token macro property">println!</span><span class="token punctuation">(</span><span class="token string">"发送之前"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        tx<span class="token punctuation">.</span><span class="token function">send</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">unwrap</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token macro property">println!</span><span class="token punctuation">(</span><span class="token string">"发送之后"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">&#125;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token macro property">println!</span><span class="token punctuation">(</span><span class="token string">"睡眠之前"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token namespace">thread<span class="token punctuation">::</span></span><span class="token function">sleep</span><span class="token punctuation">(</span><span class="token class-name">Duration</span><span class="token punctuation">::</span><span class="token function">from_secs</span><span class="token punctuation">(</span><span class="token number">3</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token macro property">println!</span><span class="token punctuation">(</span><span class="token string">"睡眠之后"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token macro property">println!</span><span class="token punctuation">(</span><span class="token string">"receive &#123;&#125;"</span><span class="token punctuation">,</span> rx<span class="token punctuation">.</span><span class="token function">recv</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">unwrap</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    handle<span class="token punctuation">.</span><span class="token function">join</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">unwrap</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<h3 id="传输多种类型的数据"><a href="#传输多种类型的数据" class="headerlink" title="传输多种类型的数据"></a>传输多种类型的数据</h3><p>可以使用枚举来实现</p>
+<p>但是有一点需要注意, Rust会按照枚举中占用内存最大的那个成员进行内存对齐, 这意味着就算传输的是枚举占用内存最小的成员, 它占用的内存依然和最大的成员相同, 因此会造成内存上的浪费</p>
+<h2 id="线程同步-锁-Condvar和信号量"><a href="#线程同步-锁-Condvar和信号量" class="headerlink" title="线程同步: 锁, Condvar和信号量"></a>线程同步: 锁, Condvar和信号量</h2><p>共享内存可以说是同步的灵魂, 因为消息传递的底层实际上也是通过共享内存来实现, 两者区别:</p>
+<ul>
+<li>共享内存相对消息传递能节省多次内存拷贝的成本</li>
+<li>共享内存的实现简洁的多</li>
+<li>共享内存的锁竞争更多</li>
+</ul>
+<p>消息传递适用的场景很多: </p>
+<ul>
+<li>需要可靠和简单的(简单不等于简洁)实现时</li>
+<li>需要模拟现实世界, 例如用消息去通知某个目标执行相应的操作时</li>
+<li>需要一个任务处理流水线(管道)时, 等等</li>
+</ul>
+<p>而使用共享内存(并发原语)的场景往往就比较简单粗暴: 需要简洁的实现以及更高的性能时</p>
+<p>总之, 消息传递类似一个单所有权的系统: 一个值同时只能有一个所有者, 如果另一个线程需要该值的所有权, 需要将所有权通过消息传递进行转移. 而共享内存类似于一个多所有权的系统: 多个线程可以同时访问同一个值</p>
+<h3 id="互斥锁Mutex"><a href="#互斥锁Mutex" class="headerlink" title="互斥锁Mutex"></a>互斥锁Mutex</h3><p>互斥锁Mutex(mutual exclusion)</p>
+<p>Mutex让多个线程并发的访问同一个值变成了排队访问: 同一时间, 只允许一个线程A 访问该值, 其他线程需要等待A 访问完成之后才能继续</p>
+<p>单线程中使用Mutex:</p>
+<pre class="line-numbers language-rust" data-language="rust"><code class="language-rust"><span class="token keyword">use</span> <span class="token namespace">std<span class="token punctuation">::</span>sync<span class="token punctuation">::</span></span><span class="token class-name">Mutex</span><span class="token punctuation">;</span>
+
+<span class="token keyword">fn</span> <span class="token function-definition function">main</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+    <span class="token comment">// 使用`Mutex`结构体的关联函数创建新的互斥锁实例</span>
+    <span class="token keyword">let</span> m <span class="token operator">=</span> <span class="token class-name">Mutex</span><span class="token punctuation">::</span><span class="token function">new</span><span class="token punctuation">(</span><span class="token number">5</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token punctuation">&#123;</span>
+        <span class="token comment">// 获取锁，然后deref为`m`的引用</span>
+        <span class="token comment">// lock返回的是Result</span>
+        <span class="token keyword">let</span> <span class="token keyword">mut</span> num <span class="token operator">=</span> m<span class="token punctuation">.</span><span class="token function">lock</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">unwrap</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token operator">*</span>num <span class="token operator">=</span> <span class="token number">6</span><span class="token punctuation">;</span>
+        <span class="token comment">// 锁自动被drop</span>
+    <span class="token punctuation">&#125;</span>
+
+    <span class="token macro property">println!</span><span class="token punctuation">(</span><span class="token string">"m = &#123;:?&#125;"</span><span class="token punctuation">,</span> m<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p>多线程中使用Mutex:</p>
+<pre class="line-numbers language-rust" data-language="rust"><code class="language-rust"><span class="token keyword">use</span> <span class="token namespace">std<span class="token punctuation">::</span>sync<span class="token punctuation">::</span></span><span class="token punctuation">&#123;</span><span class="token class-name">Arc</span><span class="token punctuation">,</span> <span class="token class-name">Mutex</span><span class="token punctuation">&#125;</span><span class="token punctuation">;</span>
+<span class="token keyword">use</span> <span class="token namespace">std<span class="token punctuation">::</span></span>thread<span class="token punctuation">;</span>
+
+<span class="token keyword">fn</span> <span class="token function-definition function">main</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+    <span class="token keyword">let</span> counter <span class="token operator">=</span> <span class="token class-name">Arc</span><span class="token punctuation">::</span><span class="token function">new</span><span class="token punctuation">(</span><span class="token class-name">Mutex</span><span class="token punctuation">::</span><span class="token function">new</span><span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">let</span> <span class="token keyword">mut</span> handles <span class="token operator">=</span> <span class="token macro property">vec!</span><span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+
+    <span class="token keyword">for</span> _ <span class="token keyword">in</span> <span class="token number">0</span><span class="token punctuation">..</span><span class="token number">10</span> <span class="token punctuation">&#123;</span>
+        <span class="token keyword">let</span> counter <span class="token operator">=</span> <span class="token class-name">Arc</span><span class="token punctuation">::</span><span class="token function">clone</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>counter<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">let</span> handle <span class="token operator">=</span> <span class="token namespace">thread<span class="token punctuation">::</span></span><span class="token function">spawn</span><span class="token punctuation">(</span><span class="token keyword">move</span> <span class="token closure-params"><span class="token closure-punctuation punctuation">|</span><span class="token closure-punctuation punctuation">|</span></span> <span class="token punctuation">&#123;</span>
+            <span class="token keyword">let</span> <span class="token keyword">mut</span> num <span class="token operator">=</span> counter<span class="token punctuation">.</span><span class="token function">lock</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">unwrap</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+            <span class="token operator">*</span>num <span class="token operator">+=</span> <span class="token number">1</span><span class="token punctuation">;</span>
+        <span class="token punctuation">&#125;</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        handles<span class="token punctuation">.</span><span class="token function">push</span><span class="token punctuation">(</span>handle<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">&#125;</span>
+
+    <span class="token keyword">for</span> handle <span class="token keyword">in</span> handles <span class="token punctuation">&#123;</span>
+        handle<span class="token punctuation">.</span><span class="token function">join</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">unwrap</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">&#125;</span>
+
+    <span class="token macro property">println!</span><span class="token punctuation">(</span><span class="token string">"Result: &#123;&#125;"</span><span class="token punctuation">,</span> <span class="token operator">*</span>counter<span class="token punctuation">.</span><span class="token function">lock</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">unwrap</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<h4 id="内部可变性"><a href="#内部可变性" class="headerlink" title="内部可变性"></a>内部可变性</h4><p>Rc<T> 和 RefCell<T>的结合, 可以实现单线程的内部可变性</p>
+<p>由于Mutex<T> 可以支持修改内部数据, 当结合Arc<T> 一起使用, 可以实现多线程的内部可变性</p>
+<p>简单总结: Rc<T>&#x2F;RefCell<T> 用于单线程内部可变性, Arc<T>&#x2F;Mutex<T> 用于多线程内部可变性</p>
+<h4 id="需要小心使用Mutex"><a href="#需要小心使用Mutex" class="headerlink" title="需要小心使用Mutex"></a>需要小心使用Mutex</h4><ul>
+<li>在使用数据前必须先获取锁</li>
+<li>在数据使用完成后, 必须及时的释放锁, 比如文章开头的例子, 使用内部语句块的目的就是为了及时释放锁</li>
+</ul>
+<h3 id="读写锁RwLock"><a href="#读写锁RwLock" class="headerlink" title="读写锁RwLock"></a>读写锁RwLock</h3><p>Mutex 会对每次读写都进行加锁, 但某些时候, 我们需要大量的并发读, Mutex 就无法满足需求, 此时就可以使用RwLock</p>
+<pre class="line-numbers language-rust" data-language="rust"><code class="language-rust"><span class="token keyword">use</span> <span class="token namespace">std<span class="token punctuation">::</span>sync<span class="token punctuation">::</span></span><span class="token class-name">RwLock</span><span class="token punctuation">;</span>
+
+<span class="token keyword">fn</span> <span class="token function-definition function">main</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+    <span class="token keyword">let</span> lock <span class="token operator">=</span> <span class="token class-name">RwLock</span><span class="token punctuation">::</span><span class="token function">new</span><span class="token punctuation">(</span><span class="token number">5</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token comment">// 同一时间允许多个读</span>
+    <span class="token punctuation">&#123;</span>
+        <span class="token keyword">let</span> r1 <span class="token operator">=</span> lock<span class="token punctuation">.</span><span class="token function">read</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">unwrap</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">let</span> r2 <span class="token operator">=</span> lock<span class="token punctuation">.</span><span class="token function">read</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">unwrap</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token macro property">assert_eq!</span><span class="token punctuation">(</span><span class="token operator">*</span>r1<span class="token punctuation">,</span> <span class="token number">5</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token macro property">assert_eq!</span><span class="token punctuation">(</span><span class="token operator">*</span>r2<span class="token punctuation">,</span> <span class="token number">5</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">&#125;</span> <span class="token comment">// 读锁在此处被drop</span>
+
+    <span class="token comment">// 同一时间只允许一个写</span>
+    <span class="token punctuation">&#123;</span>
+        <span class="token keyword">let</span> <span class="token keyword">mut</span> w <span class="token operator">=</span> lock<span class="token punctuation">.</span><span class="token function">write</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">unwrap</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token operator">*</span>w <span class="token operator">+=</span> <span class="token number">1</span><span class="token punctuation">;</span>
+        <span class="token macro property">assert_eq!</span><span class="token punctuation">(</span><span class="token operator">*</span>w<span class="token punctuation">,</span> <span class="token number">6</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token comment">// 以下代码会阻塞发生死锁，因为读和写不允许同时存在</span>
+        <span class="token comment">// 写锁w直到该语句块结束才被释放，因此下面的读锁依然处于`w`的作用域中</span>
+        <span class="token comment">// let r1 = lock.read();</span>
+        <span class="token comment">// println!("&#123;:?&#125;",r1);</span>
+    <span class="token punctuation">&#125;</span><span class="token comment">// 写锁在此处被drop</span>
+<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<ul>
+<li>同时允许多个读, 但是最多只能有一个写</li>
+<li>读和写不能同时存在</li>
+<li>读可以使用<code>read</code> <code>try_read</code>, 写<code>write</code> <code>try_write</code>, 在实际项目中, <code>try_xxx</code> 会安全很多</li>
+</ul>
+<h3 id="Mutex还是RwLock"><a href="#Mutex还是RwLock" class="headerlink" title="Mutex还是RwLock"></a>Mutex还是RwLock</h3><p>首先简单性上Mutex完胜, 因为使用RwLock得操心几个问题:</p>
+<ul>
+<li>读和写不能同时发生, 如果使用try_xxx解决, 就必须做大量的错误处理和失败重试机制</li>
+<li>当读多写少时, 写操作可能会因为一直无法获得锁导致连续失败多次(Write starvation)</li>
+<li>RwLock其实是操作系统提供的, 实现原理要比Mutex复杂得多, 因此单就锁的性能而言, 比不上原生实现的Mutex</li>
+</ul>
+<p>再来简单总结下两者的使用场景:</p>
+<ul>
+<li>追求高并发读取时, 使用RwLock, 因为Mutex一次只允许一个线程去读取</li>
+<li>如果要保证写操作的成功性, 使用Mutex</li>
+<li>不知道哪个适合, 统一使用Mutex</li>
+</ul>
+
 	
 	</div>
   <a type="button" href="/2023/08/24/Rust学习笔记/#more" class="btn btn-default more">阅读此文</a>
@@ -1482,17 +1803,17 @@ warning<span class="token punctuation">:</span> unused `<span class="token class
 		<h4>标签云</h4>
 		<ul class="tag_box inline list-unstyled">		
 		
-			<li><a href="/tags/github/">github<span>1</span></a></li>
-		
 			<li><a href="/tags/Tokio/">Tokio<span>1</span></a></li>
-		
-			<li><a href="/tags/Hexo/">Hexo<span>1</span></a></li>
-		
-			<li><a href="/tags/Rust/">Rust<span>2</span></a></li>
 		
 			<li><a href="/tags/git/">git<span>1</span></a></li>
 		
 			<li><a href="/tags/UE5/">UE5<span>1</span></a></li>
+		
+			<li><a href="/tags/Hexo/">Hexo<span>1</span></a></li>
+		
+			<li><a href="/tags/github/">github<span>1</span></a></li>
+		
+			<li><a href="/tags/Rust/">Rust<span>2</span></a></li>
 		
 		 
 		</ul>
