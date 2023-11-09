@@ -6,7 +6,7 @@
   <meta http-equiv="cache-control" content="no-cache">
   <meta http-equiv="expires" content="0">
   
-  <title>Tokio随记 | Arctique</title>
+  <title>Tokio随记 | Arctique</title><meta name="robots" content="noindex">
   <meta name="author" content="Arctique">
   
   <meta name="description" content="设置学习环境mini-redis安装mini-redis 服务器
@@ -285,7 +285,7 @@ async fn main() &#123;
 <li>将锁进行分片</li>
 <li>重构代码以避免锁</li>
 </ul>
-
+<!-- flag of hidden posts -->
 	  <div class="article-footer-copyright">
 
     本博客采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" target="_blank">知识共享署名-非商业性使用-相同方式共享 4.0 国际许可协议(CC BY-NC-SA 4.0) 发布.</a>
@@ -303,18 +303,6 @@ async fn main() &#123;
   	<center>
 
 	<div class="pagination">
-
-    
-    
-    <a href="/2023/09/19/关于github失联的咪咪/" type="button" class="btn btn-default"><i
-                class="fa fa-arrow-circle-o-left"></i> 上一页</a>
-    
-
-    <a href="/" type="button" class="btn btn-default"><i class="fa fa-home"></i>Home</a>
-    
-    <a href="/2023/08/24/Rust学习笔记/" type="button" class="btn btn-default ">下一页<i
-                class="fa fa-arrow-circle-o-right"></i></a>
-    
 
     
 </div>
@@ -382,7 +370,7 @@ new Valine(valineConfig);
     <ul id="categorys" class="tag_box list-unstyled collapse in">
           
   <li>
-    <li><a href="/categories/笔记/">笔记<span>5</span></a></li>
+    <li><a href="/categories/笔记/">笔记<span>3</span></a></li>
   </li>
 
     </ul>
@@ -395,13 +383,19 @@ new Valine(valineConfig);
 	<a data-toggle="collapse" data-target="#tags"><i class="fa fa-tags"></i></a>		  
     <ul id="tags" class="tag_box list-unstyled collapse in">	  
 	    
-  <li><a href="/tags/Rust/">Rust<span>2</span></a></li> <li><a href="/tags/Tokio/">Tokio<span>1</span></a></li>
+  <li><a href="/tags/Rust/">Rust<span>1</span></a></li> <li><a href="/tags/Tokio/">Tokio<span>0</span></a></li>
     </ul>
 	</div>
 		
 
 	<!-- toc -->
 	<div class="meta-widget">
+	
+	   <a data-toggle="collapse" data-target="#toc"><i class="fa fa-bars"></i></a>
+	   <div id="toc" class="toc collapse in">
+		   <span class="toc-title">Contents</span>
+			<ol class="toc-article"><li class="toc-article-item toc-article-level-2"><a class="toc-article-link" href="#%E8%AE%BE%E7%BD%AE%E5%AD%A6%E4%B9%A0%E7%8E%AF%E5%A2%83"><span class="toc-article-text">设置学习环境</span></a><ol class="toc-article-child"><li class="toc-article-item toc-article-level-3"><a class="toc-article-link" href="#mini-redis"><span class="toc-article-text">mini-redis</span></a></li></ol></li><li class="toc-article-item toc-article-level-2"><a class="toc-article-link" href="#Hello-world"><span class="toc-article-text">Hello world</span></a><ol class="toc-article-child"><li class="toc-article-item toc-article-level-3"><a class="toc-article-link" href="#async-main"><span class="toc-article-text">async main</span></a></li><li class="toc-article-item toc-article-level-3"><a class="toc-article-link" href="#cargo-feature"><span class="toc-article-text">cargo feature</span></a></li><li class="toc-article-item toc-article-level-3"><a class="toc-article-link" href="#%E4%BB%BB%E5%8A%A1"><span class="toc-article-text">任务</span></a></li><li class="toc-article-item toc-article-level-3"><a class="toc-article-link" href="#%E2%80%98static-%E7%BA%A6%E6%9D%9F"><span class="toc-article-text">‘static 约束</span></a></li><li class="toc-article-item toc-article-level-3"><a class="toc-article-link" href="#Send-%E7%BA%A6%E6%9D%9F"><span class="toc-article-text">Send 约束</span></a></li></ol></li><li class="toc-article-item toc-article-level-2"><a class="toc-article-link" href="#%E5%85%B1%E4%BA%AB%E7%8A%B6%E6%80%81"><span class="toc-article-text">共享状态</span></a></li></ol>
+		</div>
 	
 	</div>
 	

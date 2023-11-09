@@ -6,7 +6,7 @@
   <meta http-equiv="cache-control" content="no-cache">
   <meta http-equiv="expires" content="0">
   
-  <title>UE5随记 | Arctique</title>
+  <title>UE5随记 | Arctique</title><meta name="robots" content="noindex">
   <meta name="author" content="Arctique">
   
   <meta name="description" content="设置缓存重置缓存路径将系统默认的设置：所有项目的缓存文件都在系统盘下，修改为在各自项目目录下
@@ -136,7 +136,7 @@ Win系统为例：
 <h3 id="可删除缓存信息"><a href="#可删除缓存信息" class="headerlink" title="可删除缓存信息"></a>可删除缓存信息</h3><p>可删除的缓存信息在此目录下：<code>C:\Users\Arctique\AppData\Local\UnrealEngine\Common\DerivedDataCache</code></p>
 <h3 id="UE项目版本管理"><a href="#UE项目版本管理" class="headerlink" title="UE项目版本管理"></a>UE项目版本管理</h3><p>使用Git作为项目版本管理，还需要下载<code>git lfs</code></p>
 <p>初始化完成项目仓库之后，项目根目录会生成对应的版本版本管理文件<code>.gitattributes</code>。需要在此配置文件中添加以下配置：<code>*.uassert filter=lfs diff=lfs merge=lfs -text</code></p>
-
+<!-- flag of hidden posts -->
 	  <div class="article-footer-copyright">
 
     本博客采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" target="_blank">知识共享署名-非商业性使用-相同方式共享 4.0 国际许可协议(CC BY-NC-SA 4.0) 发布.</a>
@@ -154,18 +154,6 @@ Win系统为例：
   	<center>
 
 	<div class="pagination">
-
-    
-    
-    <a href="/2023/08/24/Rust学习笔记/" type="button" class="btn btn-default"><i
-                class="fa fa-arrow-circle-o-left"></i> 上一页</a>
-    
-
-    <a href="/" type="button" class="btn btn-default"><i class="fa fa-home"></i>Home</a>
-    
-    <a href="/2023/07/14/Git常用命令/" type="button" class="btn btn-default ">下一页<i
-                class="fa fa-arrow-circle-o-right"></i></a>
-    
 
     
 </div>
@@ -233,7 +221,7 @@ new Valine(valineConfig);
     <ul id="categorys" class="tag_box list-unstyled collapse in">
           
   <li>
-    <li><a href="/categories/笔记/">笔记<span>5</span></a></li>
+    <li><a href="/categories/笔记/">笔记<span>3</span></a></li>
   </li>
 
     </ul>
@@ -246,13 +234,19 @@ new Valine(valineConfig);
 	<a data-toggle="collapse" data-target="#tags"><i class="fa fa-tags"></i></a>		  
     <ul id="tags" class="tag_box list-unstyled collapse in">	  
 	    
-  <li><a href="/tags/UE5/">UE5<span>1</span></a></li>
+  <li><a href="/tags/UE5/">UE5<span>0</span></a></li>
     </ul>
 	</div>
 		
 
 	<!-- toc -->
 	<div class="meta-widget">
+	
+	   <a data-toggle="collapse" data-target="#toc"><i class="fa fa-bars"></i></a>
+	   <div id="toc" class="toc collapse in">
+		   <span class="toc-title">Contents</span>
+			<ol class="toc-article"><li class="toc-article-item toc-article-level-2"><a class="toc-article-link" href="#%E8%AE%BE%E7%BD%AE%E7%BC%93%E5%AD%98"><span class="toc-article-text">设置缓存</span></a><ol class="toc-article-child"><li class="toc-article-item toc-article-level-3"><a class="toc-article-link" href="#%E9%87%8D%E7%BD%AE%E7%BC%93%E5%AD%98%E8%B7%AF%E5%BE%84"><span class="toc-article-text">重置缓存路径</span></a></li><li class="toc-article-item toc-article-level-3"><a class="toc-article-link" href="#%E5%8F%AF%E5%88%A0%E9%99%A4%E7%BC%93%E5%AD%98%E4%BF%A1%E6%81%AF"><span class="toc-article-text">可删除缓存信息</span></a></li><li class="toc-article-item toc-article-level-3"><a class="toc-article-link" href="#UE%E9%A1%B9%E7%9B%AE%E7%89%88%E6%9C%AC%E7%AE%A1%E7%90%86"><span class="toc-article-text">UE项目版本管理</span></a></li></ol></li></ol>
+		</div>
 	
 	</div>
 	

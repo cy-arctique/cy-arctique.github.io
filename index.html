@@ -184,191 +184,6 @@ and the repository exists.<span aria-hidden="true" class="line-numbers-rows"><sp
 <div class="row">
 	<div class="col-md-8">
 		<h3 class="title">
-			<a href="/2023/09/04/Tokio随记/" >Tokio随记</a>
-		</h3>
-		</div>
-	<div class="col-md-4">
-		<div class="date">post @ 2023-09-04  </div>
-		</div>
-	</div>
-	
-
-
-			<div class="entry">
-  <div class="row">
-	
-	
-		<h2 id="设置学习环境"><a href="#设置学习环境" class="headerlink" title="设置学习环境"></a>设置学习环境</h2><h3 id="mini-redis"><a href="#mini-redis" class="headerlink" title="mini-redis"></a>mini-redis</h3><p>安装<code>mini-redis</code> 服务器</p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">cargo</span> <span class="token function">install</span> mini-redis<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-
-<p>通过启动服务器来确保它已经安装</p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">mini-redis-server<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-
-<p>在单独的终端窗口中，尝试使用以下命令获取密钥<code>mini-redis-cli</code></p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">mini-redis-cli <span class="token builtin class-name">set</span> foo <span class="token number">1</span>
-mini-redis-cli get foo<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
-
-<h2 id="Hello-world"><a href="#Hello-world" class="headerlink" title="Hello world"></a>Hello world</h2><pre class="line-numbers language-Rust" data-language="Rust"><code class="language-Rust">use mini_redis::&#123;client, Result&#125;;
-
-#[tokio::main]
-async fn main() -&gt; Result&lt;()&gt; &#123;
-    &#x2F;&#x2F; 建立与mini-redis服务器的连接
-    let mut client &#x3D; client::connect(&quot;127.0.0.1:6379&quot;).await?;
-
-    &#x2F;&#x2F; 设置 key: &quot;hello&quot; 和 值: &quot;world&quot;
-    client.set(&quot;hello&quot;, &quot;world&quot;.into()).await?;
-
-    &#x2F;&#x2F; 获取&quot;key&#x3D;hello&quot;的值
-    let result &#x3D; client.get(&quot;hello&quot;).await?;
-
-    println!(&quot;从服务器端获取到结果&#x3D;&#123;:?&#125;&quot;, result);
-
-    Ok(())
-&#125;<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<p><code>client::connect</code> 函数由<code>mini-redis</code> 包提供，它使用异步的方式跟指定的远程<code>IP</code> 地址建立 TCP 长连接，一旦连接建立成功，那 client 的赋值初始化也将完成</p>
-<p>特别值得注意的是：虽然该连接是异步建立的，但是从代码本身来看，完全是同步的代码编写方式，唯一能说明异步的点就是<code>.await</code></p>
-<p>在上例中，<code>redis</code> 的连接函数 <code>connect</code> 实现如上，它看上去很像是一个同步函数，但是 <code>async fn</code> 出卖了它。 <code>async fn</code> 异步函数并不会直接返回值，而是返回一个 <code>Future</code>，顾名思义，该 <code>Future</code> 会在未来某个时间点被执行，然后最终获取到真实的返回值 <code>Result&lt;Client&gt;</code></p>
-<p>由于 <code>async</code> 会返回一个 <code>Future</code>，因此我们还需要配合使用 <code>.await</code> 来让该 <code>Future</code> 运行起来，最终获得返回值:</p>
-<pre class="line-numbers language-Rust" data-language="Rust"><code class="language-Rust">async fn say_to_world() -&gt; String &#123;
-    String::from(&quot;world&quot;)
-&#125;
-
-#[tokio::main]
-async fn main() &#123;
-    &#x2F;&#x2F; 此处的函数调用是惰性的，并不会执行 &#96;say_to_world()&#96; 函数体中的代码
-    let op &#x3D; say_to_world();
-
-    &#x2F;&#x2F; 首先打印出 &quot;hello&quot;
-    println!(&quot;hello&quot;);
-
-    &#x2F;&#x2F; 使用 &#96;.await&#96; 让 &#96;say_to_world&#96; 开始运行起来
-    println!(&quot;&#123;&#125;&quot;, op.await);
-&#125;<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<p><code>async fn</code> 到底返回什么？它实际上返回的是一个实现了 <code>Future</code> 特征的匿名类型: <code>impl Future&lt;Output = String&gt;</code></p>
-<h3 id="async-main"><a href="#async-main" class="headerlink" title="async main"></a>async main</h3><p>在代码中，使用了一个与众不同的<code>main</code> 函数：<code>async fn main</code>，而且是用<code>#[tokio::main]</code> 属性进行了标记。异步<code>main</code> 函数有以下意义：</p>
-<ul>
-<li><code>.await</code> 只能在<code>async</code> 函数中使用，如果是以前的<code>fn main</code>，那它内部是无法直接使用<code>async</code> 函数的。这个会极大地限制了我们的使用场景</li>
-<li>异步运行时本身需要初始化</li>
-</ul>
-<p>因此<code>#[tokio::main]</code> 宏将<code>async fn main()</code> 隐式的转换为<code>fn main()</code> 的同时还对整个异步运行时进行了初始化：</p>
-<pre class="line-numbers language-Rust" data-language="Rust"><code class="language-Rust">#[tokio::main]
-async fn main() &#123;
-    println!(&quot;hello&quot;);
-&#125;
-&#x2F;&#x2F; 将被转换成：
-fn main() &#123;
-    let mut rt &#x3D; tokio::runtime::Runtime::new().unwrap();
-    rt.block_on(async &#123;
-        println!(&quot;hello&quot;);
-    &#125;)
-&#125;<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-
-<h3 id="cargo-feature"><a href="#cargo-feature" class="headerlink" title="cargo feature"></a>cargo feature</h3><p>在引入 <code>tokio</code> 包时，我们在 <code>Cargo.toml</code> 文件中添加了这么一行:</p>
-<pre class="line-numbers language-toml" data-language="toml"><code class="language-toml"><span class="token key property">tokio</span> <span class="token punctuation">=</span> <span class="token punctuation">&#123;</span> <span class="token key property">version</span> <span class="token punctuation">=</span> <span class="token string">"1"</span><span class="token punctuation">,</span> <span class="token key property">features</span> <span class="token punctuation">=</span> <span class="token punctuation">[</span><span class="token string">"full"</span><span class="token punctuation">]</span> <span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
-<p>里面有个 <code>features = [&quot;full&quot;]</code> 可能大家会比较迷惑，当然，关于它的具体解释在本书的 <a target="_blank" rel="noopener" href="https://course.rs/cargo/intro.html">Cargo详解专题</a> 有介绍，这里就简单进行说明</p>
-<p><code>Tokio</code> 有很多功能和特性，例如 <code>TCP</code>，<code>UDP</code>，<code>Unix sockets</code>，同步工具，多调度类型等等，不是每个应用都需要所有的这些特性。为了优化编译时间和最终生成可执行文件大小、内存占用大小，应用可以对这些特性进行可选引入</p>
-<p>而这里为了演示的方便，我们使用 <code>full</code> ，表示直接引入所有的特性</p>
-<h3 id="任务"><a href="#任务" class="headerlink" title="任务"></a>任务</h3><p>一个 <code>Tokio</code> 任务是一个异步的绿色线程，它们通过 <code>tokio::spawn</code> 进行创建，该函数会返回一个 <code>JoinHandle</code> 类型的句柄，调用者可以使用该句柄跟创建的任务进行交互</p>
-<pre class="line-numbers language-Rust" data-language="Rust"><code class="language-Rust">#[tokio::main]
-async fn main() &#123;
-    let handle &#x3D; tokio::spawn(async &#123;
-        &#x2F;&#x2F; Do some async work
-        &quot;return value&quot;
-    &#125;);
-
-    &#x2F;&#x2F; Do some other work
-
-    let out &#x3D; handle.await.unwrap();
-    println!(&quot;GOT &#123;&#125;&quot;, out);
-&#125;<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<p>等待<code>JoinHandle</code> 返回一个<code>Result</code>。当任务在执行过程中遇到错误时，<code>JoinHandle</code> 将会返回一个<code>Err</code>。当任务发生紧急情况或者任务因运行时关闭而强制取消时，就会发生这种情况</p>
-<p>任务是调度程序管理的执行单元。<code>spawn</code> 生成任务会将其提交给Tokio 调度程序，然后由它负责调度执行。需要注意的是，执行任务的线程未必是创建任务的线程，任务完全有可能运行在另一个不同的线程上，而且任务在生成后，它还可能会在线程间被移动</p>
-<h3 id="‘static-约束"><a href="#‘static-约束" class="headerlink" title="‘static 约束"></a>‘static 约束</h3><p>当在Tokio 运行时生成任务时，其类型的生命周期必须是<code>&#39;static</code>。意味着，在任务中不能使用外部数据的引用</p>
-<blockquote>
-<blockquote>
-<p>这是一个常见的误解，<code>static</code> 总是意味着“永远活着”，但事实并非如此。仅仅因为某个值是<code>static</code> 并不意味着存在内存泄漏。<a target="_blank" rel="noopener" href="https://github.com/pretzelhammer/rust-blog/blob/master/posts/common-rust-lifetime-misconceptions.md#2-if-t-static-then-t-must-be-valid-for-the-entire-program">常见的Rust生命周期误解</a></p>
-</blockquote>
-</blockquote>
-<p>例如，以下内容将无法编译：</p>
-<pre class="line-numbers language-Rust" data-language="Rust"><code class="language-Rust">use tokio::task;
-
-#[tokio::main]
-async fn main() &#123;
-    let v &#x3D; vec![1, 2, 3];
-
-    task::spawn(async &#123;
-        println!(&quot;Here&#39;s a vec: &#123;:?&#125;&quot;, v);
-    &#125;);
-&#125;<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<p>发生这种情况是因为，默认情况下，变量不会移动到异步块中。该v变量仍然属于该main函数。线程println借用v。将第7行更改为<code>task::spawn(async move &#123;</code> 将指示编译器将v移动到线程内部。现在，该任务拥有其所有数据，使其成为<code>&#39;static</code></p>
-<p>我们说某个值是<code>&#39;static</code> 时，这意味着永远保留该值不会无效。这很重要，因为编译器无法推断新生成的任务会保留多长时间。我们必须确保任务能够永远保存，以便Tokio可以让任务运行到需要的时间</p>
-<p>如果必须同时从多个任务访问单个数据，则必须使用同步原语（例如Arc）</p>
-<h3 id="Send-约束"><a href="#Send-约束" class="headerlink" title="Send 约束"></a>Send 约束</h3><p><code>tokio::spawn</code> 生成的任务必须实现 <code>Send</code> 特征，因为当这些任务在 <code>.await</code> 执行过程中发生阻塞时，Tokio 调度器会将任务在线程间移动</p>
-<p>一个任务要实现 <code>Send</code> 特征，那它在 <code>.await</code> 调用的过程中所持有的全部数据都必须实现 <code>Send</code> 特征。当 <code>.await</code> 调用发生阻塞时，任务会让出当前线程所有权给调度器，然后当任务准备好后，调度器会从上一次暂停的位置继续执行该任务。该流程能正确的工作，任务必须将<code>.await</code>之后使用的所有状态保存起来，这样才能在中断后恢复现场并继续执行。若这些状态实现了 <code>Send</code> 特征(可以在线程间安全地移动)，那任务自然也就可以在线程间安全地移动</p>
-<p>例如这段代码是可以编译运行的：</p>
-<pre class="line-numbers language-Rust" data-language="Rust"><code class="language-Rust">use tokio::task::yield_now;
-use std::rc::Rc;
-
-#[tokio::main]
-async fn main() &#123;
-    tokio::spawn(async &#123;
-        &#x2F;&#x2F; 语句块的使用强制了 &#96;rc&#96; 会在 &#96;.await&#96; 被调用前就被释放，
-        &#x2F;&#x2F; 因此 &#96;rc&#96; 并不会影响 &#96;.await&#96;的安全性
-        &#123;
-            let rc &#x3D; Rc::new(&quot;hello&quot;);
-            println!(&quot;&#123;&#125;&quot;, rc);
-        &#125;
-
-        &#x2F;&#x2F; &#96;rc&#96; 的作用范围已经失效，因此当任务让出所有权给当前线程时，它无需作为状态被保存起来
-        yield_now().await;
-    &#125;);
-&#125;<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-
-<p>而这段则不行：</p>
-<pre class="line-numbers language-Rust" data-language="Rust"><code class="language-Rust">use tokio::task::yield_now;
-use std::rc::Rc;
-
-#[tokio::main]
-async fn main() &#123;
-    tokio::spawn(async &#123;
-        let rc &#x3D; Rc::new(&quot;hello&quot;);
-
-        &#x2F;&#x2F; &#96;rc&#96; 在 &#96;.await&#96; 后还被继续使用，因此它必须被作为任务的状态保存起来
-        yield_now().await;
-
-        &#x2F;&#x2F; 事实上，注释掉下面一行代码，依然会报错
-        &#x2F;&#x2F; 原因是：是否保存，不取决于 &#96;rc&#96; 是否被使用，而是取决于 &#96;.await&#96;在调用时是否仍然处于 &#96;rc&#96; 的作用域中
-        println!(&quot;&#123;&#125;&quot;, rc);
-
-        &#x2F;&#x2F; rc 作用域在这里结束
-    &#125;);
-&#125;<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<p>这里有一个很重要的点，代码注释里面有讲到，<code>rc</code> 是否保存到任务状态中，取决于<code>.await</code> 的调用是否处于它的作用域中，上面代码中，就算注释掉<code>println!</code>，该报错依然会报错，因此<code>rc</code> 的作用域知道<code>async</code> 的末尾才结束</p>
-<h2 id="共享状态"><a href="#共享状态" class="headerlink" title="共享状态"></a>共享状态</h2><p>在使用 <code>Tokio</code> 编写异步代码时，一个常见的错误无条件地使用 <code>tokio::sync::Mutex</code> ，而真相是：<code>Tokio</code> 提供的异步锁只应该在跨多个 <code>.await</code>调用时使用，而且 <code>Tokio</code> 的 <code>Mutex</code> 实际上内部使用的也是 <code>std::sync::Mutex</code></p>
-<ul>
-<li>锁如果在多个 <code>.await</code> 过程中持有，应该使用 <code>Tokio</code> 提供的锁，原因是 <code>.await</code>的过程中锁可能在线程间转移，若使用标准库的同步锁存在死锁的可能性，例如某个任务刚获取完锁，还没使用完就因为 <code>.await</code> 让出了当前线程的所有权，结果下个任务又去获取了锁，造成死锁</li>
-<li>锁竞争不多的情况下，使用 <code>std::sync::Mutex</code></li>
-<li>锁竞争多，可以考虑使用三方库提供的性能更高的锁，例如<a target="_blank" rel="noopener" href="https://docs.rs/parking_lot/0.10.2/parking_lot/type.Mutex.html">parking_lot::Mutex</a></li>
-</ul>
-<p>当同步锁的竞争变成一个问题时，使用Tokio提供的异步锁几乎并不能帮你解决问题，此时可以考虑如下选项：</p>
-<ul>
-<li>创建专门的任务并使用消息传递的方式来管理状态</li>
-<li>将锁进行分片</li>
-<li>重构代码以避免锁</li>
-</ul>
-
-	
-	</div>
-  <a type="button" href="/2023/09/04/Tokio随记/#more" class="btn btn-default more">阅读此文</a>
-</div>
-
-		
-			
-	
-	<!-- display as entry -->
-<div class="row">
-	<div class="col-md-8">
-		<h3 class="title">
 			<a href="/2023/08/24/Rust学习笔记/" title="2023.09.14持续更新笔记,主要是Rust的一些进阶语法">Rust学习笔记</a>
 		</h3>
 		</div>
@@ -1552,44 +1367,6 @@ note: run with <span class="token variable"><span class="token variable">`</span
 <div class="row">
 	<div class="col-md-8">
 		<h3 class="title">
-			<a href="/2023/08/16/UE5随记/" >UE5随记</a>
-		</h3>
-		</div>
-	<div class="col-md-4">
-		<div class="date">post @ 2023-08-16  </div>
-		</div>
-	</div>
-	
-
-
-			<div class="entry">
-  <div class="row">
-	
-	
-		<h2 id="设置缓存"><a href="#设置缓存" class="headerlink" title="设置缓存"></a>设置缓存</h2><h3 id="重置缓存路径"><a href="#重置缓存路径" class="headerlink" title="重置缓存路径"></a>重置缓存路径</h3><p>将系统默认的设置：所有项目的缓存文件都在系统盘下，修改为在各自项目目录下</p>
-<p>Win系统为例：</p>
-<ul>
-<li>找到UE5安装路径，例如 <code>A:\UE\UE_5.2\Engine\Config\BaseEngine.ini</code></li>
-<li>记事本打开 <code>BaseEngine.ini</code> 文件</li>
-<li>搜索关键字符串 <code>ENGINEVERSIONAGNOSTICUSERDIR%DerivedDataCache</code></li>
-<li>将上一步骤搜索的字符串替换成 <code>GAMEDIR%DerivedDataCache</code></li>
-</ul>
-<h3 id="可删除缓存信息"><a href="#可删除缓存信息" class="headerlink" title="可删除缓存信息"></a>可删除缓存信息</h3><p>可删除的缓存信息在此目录下：<code>C:\Users\Arctique\AppData\Local\UnrealEngine\Common\DerivedDataCache</code></p>
-<h3 id="UE项目版本管理"><a href="#UE项目版本管理" class="headerlink" title="UE项目版本管理"></a>UE项目版本管理</h3><p>使用Git作为项目版本管理，还需要下载<code>git lfs</code></p>
-<p>初始化完成项目仓库之后，项目根目录会生成对应的版本版本管理文件<code>.gitattributes</code>。需要在此配置文件中添加以下配置：<code>*.uassert filter=lfs diff=lfs merge=lfs -text</code></p>
-
-	
-	</div>
-  <a type="button" href="/2023/08/16/UE5随记/#more" class="btn btn-default more">阅读此文</a>
-</div>
-
-		
-			
-	
-	<!-- display as entry -->
-<div class="row">
-	<div class="col-md-8">
-		<h3 class="title">
 			<a href="/2023/07/14/Git常用命令/" title="2023.08.25更新：单选一个提交合并">Git常用命令</a>
 		</h3>
 		</div>
@@ -1792,7 +1569,7 @@ note: run with <span class="token variable"><span class="token variable">`</span
 		
 			<li><a href="/categories/Hexo/">Hexo<span>1</span></a></li>
 		
-			<li><a href="/categories/笔记/">笔记<span>5</span></a></li>
+			<li><a href="/categories/笔记/">笔记<span>3</span></a></li>
 		
 		</ul>
 	</div>
@@ -1803,17 +1580,13 @@ note: run with <span class="token variable"><span class="token variable">`</span
 		<h4>标签云</h4>
 		<ul class="tag_box inline list-unstyled">		
 		
+			<li><a href="/tags/Rust/">Rust<span>1</span></a></li>
+		
 			<li><a href="/tags/git/">git<span>1</span></a></li>
-		
-			<li><a href="/tags/Tokio/">Tokio<span>1</span></a></li>
-		
-			<li><a href="/tags/Hexo/">Hexo<span>1</span></a></li>
-		
-			<li><a href="/tags/UE5/">UE5<span>1</span></a></li>
 		
 			<li><a href="/tags/github/">github<span>1</span></a></li>
 		
-			<li><a href="/tags/Rust/">Rust<span>2</span></a></li>
+			<li><a href="/tags/Hexo/">Hexo<span>1</span></a></li>
 		
 		 
 		</ul>
@@ -1831,19 +1604,15 @@ note: run with <span class="token variable"><span class="token variable">`</span
       </li>
     
       <li>
-        <a href="/2023/09/04/Tokio随记/" ><i class="fa fa-file-o"></i>Tokio随记</a>
-      </li>
-    
-      <li>
         <a href="/2023/08/24/Rust学习笔记/"  title="2023.09.14持续更新笔记,主要是Rust的一些进阶语法" ><i class="fa fa-file-o"></i>Rust学习笔记</a>
       </li>
     
       <li>
-        <a href="/2023/08/16/UE5随记/" ><i class="fa fa-file-o"></i>UE5随记</a>
+        <a href="/2023/07/14/Git常用命令/"  title="2023.08.25更新：单选一个提交合并" ><i class="fa fa-file-o"></i>Git常用命令</a>
       </li>
     
       <li>
-        <a href="/2023/07/14/Git常用命令/"  title="2023.08.25更新：单选一个提交合并" ><i class="fa fa-file-o"></i>Git常用命令</a>
+        <a href="/2023/07/13/hello-world/"  title="Hexo配置" ><i class="fa fa-file-o"></i>Hello Hexo</a>
       </li>
     
   </ul>
