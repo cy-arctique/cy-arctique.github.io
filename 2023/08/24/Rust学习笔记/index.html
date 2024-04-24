@@ -6,7 +6,7 @@
   <meta http-equiv="cache-control" content="no-cache">
   <meta http-equiv="expires" content="0">
   
-  <title>Rust学习笔记 | Arctique</title><meta name="robots" content="noindex">
+  <title>Rust学习笔记 | Arctique</title>
   <meta name="author" content="Arctique">
   
   <meta name="description" content="2023.09.14持续更新笔记,主要是Rust的一些进阶语法">
@@ -193,16 +193,16 @@ replace-with <span class="token operator">=</span> <span class="token string">'t
 
 <span class="token comment"># 清华大学</span>
 <span class="token punctuation">[</span>source.tuna<span class="token punctuation">]</span>
-registry <span class="token operator">=</span> <span class="token string">"https://mirrors.tuna.tsinghua.edu.cn/git/crates.io-index.git"</span>
+registry <span class="token operator">=</span> <span class="token string">"https://mirrors.tuna.tsinghua.edu.cn/crates.io-index"</span>
 
 <span class="token comment"># 中国科学技术大学</span>
 <span class="token punctuation">[</span>source.ustc<span class="token punctuation">]</span>
 registry <span class="token operator">=</span> <span class="token string">"git://mirrors.ustc.edu.cn/crates.io-index"</span>
 <span class="token comment"># 设置代理</span>
-<span class="token punctuation">[</span>http<span class="token punctuation">]</span>
-proxy <span class="token operator">=</span> <span class="token string">"127.0.0.1:8889"</span>
-<span class="token punctuation">[</span>https<span class="token punctuation">]</span>
-proxy <span class="token operator">=</span> <span class="token string">"127.0.0.1:8889"</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<span class="token comment"># [http]</span>
+<span class="token comment"># proxy = "127.0.0.1:8889"</span>
+<span class="token comment"># [https]</span>
+<span class="token comment"># proxy = "127.0.0.1:8889"</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 
 <h2 id="使用Rust模块系统管理代码"><a href="#使用Rust模块系统管理代码" class="headerlink" title="使用Rust模块系统管理代码"></a>使用Rust模块系统管理代码</h2><p>Rust 提供了一系列功能，可帮助你管理和组织代码。 这些功能称为“Rust 模块系统”。 系统由 Crate、模块、路径和工具组成，以与那些项结合使用</p>
 <ul>
@@ -1280,7 +1280,7 @@ note: run with <span class="token variable"><span class="token variable">`</span
 <li>如果要保证写操作的成功性, 使用Mutex</li>
 <li>不知道哪个适合, 统一使用Mutex</li>
 </ul>
-<!-- flag of hidden posts -->
+
 	  <div class="article-footer-copyright">
 
     本博客采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" target="_blank">知识共享署名-非商业性使用-相同方式共享 4.0 国际许可协议(CC BY-NC-SA 4.0) 发布.</a>
@@ -1298,6 +1298,18 @@ note: run with <span class="token variable"><span class="token variable">`</span
   	<center>
 
 	<div class="pagination">
+
+    
+    
+    <a href="/2023/09/19/关于github失联的咪咪/" type="button" class="btn btn-default"><i
+                class="fa fa-arrow-circle-o-left"></i> 上一页</a>
+    
+
+    <a href="/" type="button" class="btn btn-default"><i class="fa fa-home"></i>Home</a>
+    
+    <a href="/2023/07/14/Git常用命令/" type="button" class="btn btn-default ">下一页<i
+                class="fa fa-arrow-circle-o-right"></i></a>
+    
 
     
 </div>
@@ -1365,7 +1377,7 @@ new Valine(valineConfig);
     <ul id="categorys" class="tag_box list-unstyled collapse in">
           
   <li>
-    <li><a href="/categories/笔记/">笔记<span>2</span></a></li>
+    <li><a href="/categories/笔记/">笔记<span>3</span></a></li>
   </li>
 
     </ul>
@@ -1378,7 +1390,7 @@ new Valine(valineConfig);
 	<a data-toggle="collapse" data-target="#tags"><i class="fa fa-tags"></i></a>		  
     <ul id="tags" class="tag_box list-unstyled collapse in">	  
 	    
-  <li><a href="/tags/Rust/">Rust<span>0</span></a></li>
+  <li><a href="/tags/Rust/">Rust<span>1</span></a></li>
     </ul>
 	</div>
 		
