@@ -6,20 +6,15 @@
   <meta http-equiv="cache-control" content="no-cache">
   <meta http-equiv="expires" content="0">
   
-  <title>UE5随记 | Arctique</title>
+  <title>Learn WebGPU | Arctique</title>
   <meta name="author" content="Arctique">
   
-  <meta name="description" content="设置缓存重置缓存路径将系统默认的设置：所有项目的缓存文件都在系统盘下，修改为在各自项目目录下
-Win系统为例：
-
-找到UE5安装路径，例如 A:\UE\UE_5.2\Engine\Config\BaseEngine.ini
-记事本打开 BaseEngine.ini 文件
-搜索关键字符串 ENGINE">
+  <meta name="description" content="WebGPU学习笔记(持续更新中...)">
   
   
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
-  <meta property="og:title" content="UE5随记"/>
+  <meta property="og:title" content="Learn WebGPU"/>
   <meta property="og:site_name" content="Arctique"/>
 
   
@@ -108,7 +103,7 @@ Win系统为例：
 
 	
 		<div class="page-header">
-			<h1> UE5随记</h1>
+			<h1> Learn WebGPU</h1>
 		</div>
 	
 
@@ -123,19 +118,49 @@ Win系统为例：
 
 	<!-- content -->
 	<div class="mypage">		
+	  
+		 <div class="alert alert-success description">
+			<i class="fa fa-info-circle"></i> WebGPU学习笔记(持续更新中...)
+		 </div> <!-- alert -->
 	  		
 
-	  <h2 id="设置缓存"><a href="#设置缓存" class="headerlink" title="设置缓存"></a>设置缓存</h2><h3 id="重置缓存路径"><a href="#重置缓存路径" class="headerlink" title="重置缓存路径"></a>重置缓存路径</h3><p>将系统默认的设置：所有项目的缓存文件都在系统盘下，修改为在各自项目目录下</p>
-<p>Win系统为例：</p>
+	  <h2 id="资源初始化"><a href="#资源初始化" class="headerlink" title="资源初始化"></a>资源初始化</h2><p>使用 wgpu 接口的第一步是创建实例: <code>Instance</code>, wgpu的全部实例对象. 而 <code>Instance</code> 的主要用途是用于创建 <code>Adapter</code> 和 <code>Surface</code>. 再由 <code>Adapter</code> 创建获取到 <code>Device</code>, <code>Queue</code></p>
+<blockquote>
+<p><code>Instance</code> 的使命估计就是用于创建 <code>Adapter</code> 和 <code>Surface</code>, 后续不需要了(todo: 有待确认)</p>
+</blockquote>
 <ul>
-<li>找到UE5安装路径，例如 <code>A:\UE\UE_5.2\Engine\Config\BaseEngine.ini</code></li>
-<li>记事本打开 <code>BaseEngine.ini</code> 文件</li>
-<li>搜索关键字符串 <code>ENGINEVERSIONAGNOSTICUSERDIR%DerivedDataCache</code></li>
-<li>将上一步骤搜索的字符串替换成 <code>GAMEDIR%DerivedDataCache</code></li>
+<li><code>Instance</code> 代表了与底层图形系统的连接. 它是一个全局的句柄, 用于管理与图形 api 的交互和初始化<ul>
+<li>负责创建 <code>Surface</code> 和 <code>Adapter</code></li>
+<li>通过指定后端来选择要使用的图形 api(例如 vulkan, metal, dx12…)</li>
+<li>可以被看作是图形系统的入口点, 用于启动整个图形渲染的流程</li>
 </ul>
-<h3 id="可删除缓存信息"><a href="#可删除缓存信息" class="headerlink" title="可删除缓存信息"></a>可删除缓存信息</h3><p>可删除的缓存信息在此目录下：<code>C:\Users\Arctique\AppData\Local\UnrealEngine\Common\DerivedDataCache</code></p>
-<h3 id="UE项目版本管理"><a href="#UE项目版本管理" class="headerlink" title="UE项目版本管理"></a>UE项目版本管理</h3><p>使用Git作为项目版本管理，还需要下载<code>git lfs</code></p>
-<p>初始化完成项目仓库之后，项目根目录会生成对应的版本版本管理文件<code>.gitattributes</code>。需要在此配置文件中添加以下配置：<code>*.uassert filter=lfs diff=lfs merge=lfs -text</code></p>
+</li>
+<li><code>Adapter</code> 代表了一个特定的物理图形设备或驱动程序的抽象, 它提供了对硬件功能和特性的访问<ul>
+<li>可以查询其支持的功能和限制, 例如支持的纹理格式, 最大纹理尺寸…</li>
+<li>用于请求创建 <code>Device</code>, 根据特定的需求和硬件能力进行配置</li>
+<li>帮助确定系统中可用的图形硬件资源, 并为后续的图形操作提供基础</li>
+</ul>
+</li>
+<li><code>Surface</code> 是一个用于渲染的抽象表面, 可以是窗口, 缓冲区或其他可绘制的目标<ul>
+<li>与特定的窗口或显示设备相关联, 提供了一个绘制目标</li>
+<li>可获取其支持的功能信息, 如支持的格式和呈现模式</li>
+<li>在图形渲染中, 作为最终输出的目标, 将图形数据渲染到这个表面上</li>
+</ul>
+</li>
+<li><code>Device</code> 是执行图形操作的核心对. 它代表了一个逻辑上的图形设备, 可以进行各种图形计算和渲染操作<ul>
+<li>可以创建缓冲区, 纹理, 渲染管线等各种图形资源</li>
+<li>执行计算和渲染命令, 将图形数据提交到队列(<code>Queue</code>) 进行处理</li>
+<li>负责管理图形资源的生命周期和内存分配</li>
+</ul>
+</li>
+<li><code>Queue</code> 是一个命令队列, 用于提交图形命令进行异步处理<ul>
+<li>接收来自设备(<code>Device</code>) 的命令, 如绘制命令, 资源上传命令…</li>
+<li>将命令提交到图形硬件进行执行, 通常以异步的方式进行处理</li>
+<li>确保命令按照正确的顺序执行, 以保证图形渲染的正确性</li>
+</ul>
+</li>
+</ul>
+<p>综上所述, 这些组件在图形渲染中相互协作, <code>Instance</code> 启动整个流程, <code>Adapter</code> 选择硬件, <code>Surface</code> 提供绘制目标, <code>Device</code> 执行操作, <code>Queue</code> 管理命令的提交和执行顺序</p>
 
 	  <div class="article-footer-copyright">
 
@@ -153,13 +178,12 @@ Win系统为例：
 
     
     
-    <a href="/2023/08/24/Rust学习笔记/" type="button" class="btn btn-default"><i
-                class="fa fa-arrow-circle-o-left"></i> 上一页</a>
+    <a type="button" class="btn btn-default disabled"><i class="fa fa-arrow-circle-o-left"></i>上一页</a>
     
 
     <a href="/" type="button" class="btn btn-default"><i class="fa fa-home"></i>Home</a>
     
-    <a href="/2023/07/14/Git常用命令/" type="button" class="btn btn-default ">下一页<i
+    <a href="/2023/09/19/关于github失联的咪咪/" type="button" class="btn btn-default ">下一页<i
                 class="fa fa-arrow-circle-o-right"></i></a>
     
 
@@ -208,7 +232,7 @@ var gitalk = new Gitalk(gitalkConfig)
 	
 	<div class="meta-widget">
 	<i class="fa fa-clock-o"></i>
-	2023-08-16 
+	2024-09-25 
 	</div>
 	
 
@@ -232,7 +256,7 @@ var gitalk = new Gitalk(gitalkConfig)
 	<a data-toggle="collapse" data-target="#tags"><i class="fa fa-tags"></i></a>		  
     <ul id="tags" class="tag_box list-unstyled collapse in">	  
 	    
-  <li><a href="/tags/UE5/">UE5<span>1</span></a></li>
+  <li><a href="/tags/WebGPU/">WebGPU<span>1</span></a></li>
     </ul>
 	</div>
 		
@@ -243,7 +267,7 @@ var gitalk = new Gitalk(gitalkConfig)
 	   <a data-toggle="collapse" data-target="#toc"><i class="fa fa-bars"></i></a>
 	   <div id="toc" class="toc collapse in">
 		   <span class="toc-title">Contents</span>
-			<ol class="toc-article"><li class="toc-article-item toc-article-level-2"><a class="toc-article-link" href="#%E8%AE%BE%E7%BD%AE%E7%BC%93%E5%AD%98"><span class="toc-article-text">设置缓存</span></a><ol class="toc-article-child"><li class="toc-article-item toc-article-level-3"><a class="toc-article-link" href="#%E9%87%8D%E7%BD%AE%E7%BC%93%E5%AD%98%E8%B7%AF%E5%BE%84"><span class="toc-article-text">重置缓存路径</span></a></li><li class="toc-article-item toc-article-level-3"><a class="toc-article-link" href="#%E5%8F%AF%E5%88%A0%E9%99%A4%E7%BC%93%E5%AD%98%E4%BF%A1%E6%81%AF"><span class="toc-article-text">可删除缓存信息</span></a></li><li class="toc-article-item toc-article-level-3"><a class="toc-article-link" href="#UE%E9%A1%B9%E7%9B%AE%E7%89%88%E6%9C%AC%E7%AE%A1%E7%90%86"><span class="toc-article-text">UE项目版本管理</span></a></li></ol></li></ol>
+			<ol class="toc-article"><li class="toc-article-item toc-article-level-2"><a class="toc-article-link" href="#%E8%B5%84%E6%BA%90%E5%88%9D%E5%A7%8B%E5%8C%96"><span class="toc-article-text">资源初始化</span></a></li></ol>
 		</div>
 	
 	</div>
