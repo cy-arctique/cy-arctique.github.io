@@ -124,7 +124,7 @@
 		 </div> <!-- alert -->
 	  		
 
-	  <h2 id="资源初始化"><a href="#资源初始化" class="headerlink" title="资源初始化"></a>资源初始化</h2><p>使用 wgpu 接口的第一步是创建实例: <code>Instance</code>, wgpu的全部实例对象. 而 <code>Instance</code> 的主要用途是用于创建 <code>Adapter</code> 和 <code>Surface</code>. 再由 <code>Adapter</code> 创建获取到 <code>Device</code>, <code>Queue</code></p>
+	  <h2 id="Beginner"><a href="#Beginner" class="headerlink" title="Beginner"></a>Beginner</h2><h3 id="资源初始化"><a href="#资源初始化" class="headerlink" title="资源初始化"></a>资源初始化</h3><p>使用 wgpu 接口的第一步是创建实例: <code>Instance</code>, wgpu的全部实例对象. 而 <code>Instance</code> 的主要用途是用于创建 <code>Adapter</code> 和 <code>Surface</code>. 再由 <code>Adapter</code> 创建获取到 <code>Device</code>, <code>Queue</code></p>
 <blockquote>
 <p><code>Instance</code> 的使命估计就是用于创建 <code>Adapter</code> 和 <code>Surface</code>, 后续不需要了(todo: 有待确认)</p>
 </blockquote>
@@ -161,6 +161,40 @@
 </li>
 </ul>
 <p>综上所述, 这些组件在图形渲染中相互协作, <code>Instance</code> 启动整个流程, <code>Adapter</code> 选择硬件, <code>Surface</code> 提供绘制目标, <code>Device</code> 执行操作, <code>Queue</code> 管理命令的提交和执行顺序</p>
+<h4 id="关于创建-Adapter"><a href="#关于创建-Adapter" class="headerlink" title="关于创建 Adapter"></a>关于创建 <code>Adapter</code></h4><p>思路: 明确指定获取一个 <code>Adapter</code> or 查找一个适配的 <code>Adapter</code></p>
+<p>通过异步请求一个与给定表面兼容且不强制使用备用适配器的适配器</p>
+<pre class="line-numbers language-rust" data-language="rust"><code class="language-rust"><span class="token keyword">let</span> adapter <span class="token operator">=</span> instance
+    <span class="token punctuation">.</span><span class="token function">request_adapter</span><span class="token punctuation">(</span><span class="token operator">&amp;</span><span class="token namespace">wgpu<span class="token punctuation">::</span></span><span class="token class-name">RequestAdapterOptions</span> <span class="token punctuation">&#123;</span>
+        compatible_surface<span class="token punctuation">:</span> <span class="token class-name">Some</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>surface<span class="token punctuation">)</span><span class="token punctuation">,</span>
+        force_fallback_adapter<span class="token punctuation">:</span> <span class="token boolean">false</span><span class="token punctuation">,</span>
+        <span class="token punctuation">..</span><span class="token class-name">Default</span><span class="token punctuation">::</span><span class="token function">default</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+    <span class="token punctuation">&#125;</span><span class="token punctuation">)</span>
+    <span class="token punctuation">.</span><span class="token keyword">await</span>
+    <span class="token punctuation">.</span><span class="token function">unwrap</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p>当前使用的部分通过枚举所有支持的后端适配器，筛选出与给定表面兼容的第一个适配器并使用它</p>
+<pre class="line-numbers language-rust" data-language="rust"><code class="language-rust"><span class="token keyword">let</span> adapter <span class="token operator">=</span> instance
+    <span class="token punctuation">.</span><span class="token function">enumerate_adapters</span><span class="token punctuation">(</span><span class="token namespace">wgpu<span class="token punctuation">::</span></span><span class="token class-name">Backends</span><span class="token punctuation">::</span><span class="token function">all</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+    <span class="token punctuation">.</span><span class="token function">into_iter</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+    <span class="token punctuation">.</span><span class="token function">filter</span><span class="token punctuation">(</span><span class="token closure-params"><span class="token closure-punctuation punctuation">|</span>adapter<span class="token closure-punctuation punctuation">|</span></span> adapter<span class="token punctuation">.</span><span class="token function">is_surface_supported</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>surface<span class="token punctuation">)</span><span class="token punctuation">)</span>
+    <span class="token punctuation">.</span><span class="token function">next</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+    <span class="token punctuation">.</span><span class="token function">unwrap</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<h3 id="鼠标移动-改变背景颜色渲染"><a href="#鼠标移动-改变背景颜色渲染" class="headerlink" title="鼠标移动, 改变背景颜色渲染"></a>鼠标移动, 改变背景颜色渲染</h3><pre class="line-numbers language-rust" data-language="rust"><code class="language-rust"><span class="token keyword">fn</span> <span class="token function-definition function">input</span><span class="token punctuation">(</span><span class="token operator">&amp;</span><span class="token keyword">mut</span> <span class="token keyword">self</span><span class="token punctuation">,</span> event<span class="token punctuation">:</span> <span class="token operator">&amp;</span><span class="token class-name">WindowEvent</span><span class="token punctuation">)</span> <span class="token punctuation">-></span> <span class="token keyword">bool</span> <span class="token punctuation">&#123;</span>
+    <span class="token keyword">match</span> event <span class="token punctuation">&#123;</span>
+        <span class="token class-name">WindowEvent</span><span class="token punctuation">::</span><span class="token class-name">CursorMoved</span> <span class="token punctuation">&#123;</span> position<span class="token punctuation">,</span> <span class="token punctuation">..</span> <span class="token punctuation">&#125;</span> <span class="token operator">=></span> <span class="token punctuation">&#123;</span>
+            <span class="token comment">// clear_color 类型为 wgpu::Color</span>
+            <span class="token keyword">self</span><span class="token punctuation">.</span>clear_color <span class="token operator">=</span> <span class="token namespace">wgpu<span class="token punctuation">::</span></span><span class="token class-name">Color</span> <span class="token punctuation">&#123;</span>
+                r<span class="token punctuation">:</span> position<span class="token punctuation">.</span>x <span class="token keyword">as</span> <span class="token keyword">f64</span> <span class="token operator">/</span> <span class="token keyword">self</span><span class="token punctuation">.</span>size<span class="token punctuation">.</span>width <span class="token keyword">as</span> <span class="token keyword">f64</span><span class="token punctuation">,</span>
+                g<span class="token punctuation">:</span> position<span class="token punctuation">.</span>y <span class="token keyword">as</span> <span class="token keyword">f64</span> <span class="token operator">/</span> <span class="token keyword">self</span><span class="token punctuation">.</span>size<span class="token punctuation">.</span>height <span class="token keyword">as</span> <span class="token keyword">f64</span><span class="token punctuation">,</span>
+                b<span class="token punctuation">:</span> <span class="token number">1.0</span><span class="token punctuation">,</span>
+                a<span class="token punctuation">:</span> <span class="token number">1.0</span><span class="token punctuation">,</span>
+            <span class="token punctuation">&#125;</span><span class="token punctuation">;</span>
+            <span class="token keyword">return</span> <span class="token boolean">true</span><span class="token punctuation">;</span>
+        <span class="token punctuation">&#125;</span>
+        _ <span class="token operator">=></span> <span class="token boolean">false</span><span class="token punctuation">,</span>
+    <span class="token punctuation">&#125;</span>
+<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 
 	  <div class="article-footer-copyright">
 
@@ -178,7 +212,8 @@
 
     
     
-    <a type="button" class="btn btn-default disabled"><i class="fa fa-arrow-circle-o-left"></i>上一页</a>
+    <a href="/2024/09/27/Rust和WASM/" type="button" class="btn btn-default"><i
+                class="fa fa-arrow-circle-o-left"></i> 上一页</a>
     
 
     <a href="/" type="button" class="btn btn-default"><i class="fa fa-home"></i>Home</a>
@@ -243,7 +278,7 @@ var gitalk = new Gitalk(gitalkConfig)
     <ul id="categorys" class="tag_box list-unstyled collapse in">
           
   <li>
-    <li><a href="/categories/笔记/">笔记<span>6</span></a></li>
+    <li><a href="/categories/笔记/">笔记<span>7</span></a></li>
   </li>
 
     </ul>
@@ -267,7 +302,7 @@ var gitalk = new Gitalk(gitalkConfig)
 	   <a data-toggle="collapse" data-target="#toc"><i class="fa fa-bars"></i></a>
 	   <div id="toc" class="toc collapse in">
 		   <span class="toc-title">Contents</span>
-			<ol class="toc-article"><li class="toc-article-item toc-article-level-2"><a class="toc-article-link" href="#%E8%B5%84%E6%BA%90%E5%88%9D%E5%A7%8B%E5%8C%96"><span class="toc-article-text">资源初始化</span></a></li></ol>
+			<ol class="toc-article"><li class="toc-article-item toc-article-level-2"><a class="toc-article-link" href="#Beginner"><span class="toc-article-text">Beginner</span></a><ol class="toc-article-child"><li class="toc-article-item toc-article-level-3"><a class="toc-article-link" href="#%E8%B5%84%E6%BA%90%E5%88%9D%E5%A7%8B%E5%8C%96"><span class="toc-article-text">资源初始化</span></a><ol class="toc-article-child"><li class="toc-article-item toc-article-level-4"><a class="toc-article-link" href="#%E5%85%B3%E4%BA%8E%E5%88%9B%E5%BB%BA-Adapter"><span class="toc-article-text">关于创建 Adapter</span></a></li></ol></li><li class="toc-article-item toc-article-level-3"><a class="toc-article-link" href="#%E9%BC%A0%E6%A0%87%E7%A7%BB%E5%8A%A8-%E6%94%B9%E5%8F%98%E8%83%8C%E6%99%AF%E9%A2%9C%E8%89%B2%E6%B8%B2%E6%9F%93"><span class="toc-article-text">鼠标移动, 改变背景颜色渲染</span></a></li></ol></li></ol>
 		</div>
 	
 	</div>

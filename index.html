@@ -126,6 +126,40 @@
 <div class="row">
 	<div class="col-md-8">
 		<h3 class="title">
+			<a href="/2024/09/27/Rust和WASM/" >Rust 和 WASM</a>
+		</h3>
+		</div>
+	<div class="col-md-4">
+		<div class="date">post @ 2024-09-27  </div>
+		</div>
+	</div>
+	
+
+
+			<div class="entry">
+  <div class="row">
+	
+	
+		<h2 id="环境"><a href="#环境" class="headerlink" title="环境"></a>环境</h2><ul>
+<li>打包工具: <code>cargo install wasm-pack</code></li>
+<li>模板项目: <code>cargo install cargo-generate</code><ul>
+<li><code>cargo generate --git https://github.com/rustwasm/wasm-pack-template</code></li>
+</ul>
+</li>
+</ul>
+
+	
+	</div>
+  <a type="button" href="/2024/09/27/Rust和WASM/#more" class="btn btn-default more">阅读此文</a>
+</div>
+
+		
+			
+	
+	<!-- display as entry -->
+<div class="row">
+	<div class="col-md-8">
+		<h3 class="title">
 			<a href="/2024/09/25/LearnWebGPU/" title="WebGPU学习笔记(持续更新中...)">Learn WebGPU</a>
 		</h3>
 		</div>
@@ -145,7 +179,7 @@
 		</div>
 	
 	
-		<h2 id="资源初始化"><a href="#资源初始化" class="headerlink" title="资源初始化"></a>资源初始化</h2><p>使用 wgpu 接口的第一步是创建实例: <code>Instance</code>, wgpu的全部实例对象. 而 <code>Instance</code> 的主要用途是用于创建 <code>Adapter</code> 和 <code>Surface</code>. 再由 <code>Adapter</code> 创建获取到 <code>Device</code>, <code>Queue</code></p>
+		<h2 id="Beginner"><a href="#Beginner" class="headerlink" title="Beginner"></a>Beginner</h2><h3 id="资源初始化"><a href="#资源初始化" class="headerlink" title="资源初始化"></a>资源初始化</h3><p>使用 wgpu 接口的第一步是创建实例: <code>Instance</code>, wgpu的全部实例对象. 而 <code>Instance</code> 的主要用途是用于创建 <code>Adapter</code> 和 <code>Surface</code>. 再由 <code>Adapter</code> 创建获取到 <code>Device</code>, <code>Queue</code></p>
 <blockquote>
 <p><code>Instance</code> 的使命估计就是用于创建 <code>Adapter</code> 和 <code>Surface</code>, 后续不需要了(todo: 有待确认)</p>
 </blockquote>
@@ -182,6 +216,40 @@
 </li>
 </ul>
 <p>综上所述, 这些组件在图形渲染中相互协作, <code>Instance</code> 启动整个流程, <code>Adapter</code> 选择硬件, <code>Surface</code> 提供绘制目标, <code>Device</code> 执行操作, <code>Queue</code> 管理命令的提交和执行顺序</p>
+<h4 id="关于创建-Adapter"><a href="#关于创建-Adapter" class="headerlink" title="关于创建 Adapter"></a>关于创建 <code>Adapter</code></h4><p>思路: 明确指定获取一个 <code>Adapter</code> or 查找一个适配的 <code>Adapter</code></p>
+<p>通过异步请求一个与给定表面兼容且不强制使用备用适配器的适配器</p>
+<pre class="line-numbers language-rust" data-language="rust"><code class="language-rust"><span class="token keyword">let</span> adapter <span class="token operator">=</span> instance
+    <span class="token punctuation">.</span><span class="token function">request_adapter</span><span class="token punctuation">(</span><span class="token operator">&amp;</span><span class="token namespace">wgpu<span class="token punctuation">::</span></span><span class="token class-name">RequestAdapterOptions</span> <span class="token punctuation">&#123;</span>
+        compatible_surface<span class="token punctuation">:</span> <span class="token class-name">Some</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>surface<span class="token punctuation">)</span><span class="token punctuation">,</span>
+        force_fallback_adapter<span class="token punctuation">:</span> <span class="token boolean">false</span><span class="token punctuation">,</span>
+        <span class="token punctuation">..</span><span class="token class-name">Default</span><span class="token punctuation">::</span><span class="token function">default</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+    <span class="token punctuation">&#125;</span><span class="token punctuation">)</span>
+    <span class="token punctuation">.</span><span class="token keyword">await</span>
+    <span class="token punctuation">.</span><span class="token function">unwrap</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p>当前使用的部分通过枚举所有支持的后端适配器，筛选出与给定表面兼容的第一个适配器并使用它</p>
+<pre class="line-numbers language-rust" data-language="rust"><code class="language-rust"><span class="token keyword">let</span> adapter <span class="token operator">=</span> instance
+    <span class="token punctuation">.</span><span class="token function">enumerate_adapters</span><span class="token punctuation">(</span><span class="token namespace">wgpu<span class="token punctuation">::</span></span><span class="token class-name">Backends</span><span class="token punctuation">::</span><span class="token function">all</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+    <span class="token punctuation">.</span><span class="token function">into_iter</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+    <span class="token punctuation">.</span><span class="token function">filter</span><span class="token punctuation">(</span><span class="token closure-params"><span class="token closure-punctuation punctuation">|</span>adapter<span class="token closure-punctuation punctuation">|</span></span> adapter<span class="token punctuation">.</span><span class="token function">is_surface_supported</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>surface<span class="token punctuation">)</span><span class="token punctuation">)</span>
+    <span class="token punctuation">.</span><span class="token function">next</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+    <span class="token punctuation">.</span><span class="token function">unwrap</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<h3 id="鼠标移动-改变背景颜色渲染"><a href="#鼠标移动-改变背景颜色渲染" class="headerlink" title="鼠标移动, 改变背景颜色渲染"></a>鼠标移动, 改变背景颜色渲染</h3><pre class="line-numbers language-rust" data-language="rust"><code class="language-rust"><span class="token keyword">fn</span> <span class="token function-definition function">input</span><span class="token punctuation">(</span><span class="token operator">&amp;</span><span class="token keyword">mut</span> <span class="token keyword">self</span><span class="token punctuation">,</span> event<span class="token punctuation">:</span> <span class="token operator">&amp;</span><span class="token class-name">WindowEvent</span><span class="token punctuation">)</span> <span class="token punctuation">-></span> <span class="token keyword">bool</span> <span class="token punctuation">&#123;</span>
+    <span class="token keyword">match</span> event <span class="token punctuation">&#123;</span>
+        <span class="token class-name">WindowEvent</span><span class="token punctuation">::</span><span class="token class-name">CursorMoved</span> <span class="token punctuation">&#123;</span> position<span class="token punctuation">,</span> <span class="token punctuation">..</span> <span class="token punctuation">&#125;</span> <span class="token operator">=></span> <span class="token punctuation">&#123;</span>
+            <span class="token comment">// clear_color 类型为 wgpu::Color</span>
+            <span class="token keyword">self</span><span class="token punctuation">.</span>clear_color <span class="token operator">=</span> <span class="token namespace">wgpu<span class="token punctuation">::</span></span><span class="token class-name">Color</span> <span class="token punctuation">&#123;</span>
+                r<span class="token punctuation">:</span> position<span class="token punctuation">.</span>x <span class="token keyword">as</span> <span class="token keyword">f64</span> <span class="token operator">/</span> <span class="token keyword">self</span><span class="token punctuation">.</span>size<span class="token punctuation">.</span>width <span class="token keyword">as</span> <span class="token keyword">f64</span><span class="token punctuation">,</span>
+                g<span class="token punctuation">:</span> position<span class="token punctuation">.</span>y <span class="token keyword">as</span> <span class="token keyword">f64</span> <span class="token operator">/</span> <span class="token keyword">self</span><span class="token punctuation">.</span>size<span class="token punctuation">.</span>height <span class="token keyword">as</span> <span class="token keyword">f64</span><span class="token punctuation">,</span>
+                b<span class="token punctuation">:</span> <span class="token number">1.0</span><span class="token punctuation">,</span>
+                a<span class="token punctuation">:</span> <span class="token number">1.0</span><span class="token punctuation">,</span>
+            <span class="token punctuation">&#125;</span><span class="token punctuation">;</span>
+            <span class="token keyword">return</span> <span class="token boolean">true</span><span class="token punctuation">;</span>
+        <span class="token punctuation">&#125;</span>
+        _ <span class="token operator">=></span> <span class="token boolean">false</span><span class="token punctuation">,</span>
+    <span class="token punctuation">&#125;</span>
+<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 
 	
 	</div>
@@ -1861,7 +1929,7 @@ note: run with <span class="token variable"><span class="token variable">`</span
 		
 			<li><a href="/categories/Hexo/">Hexo<span>1</span></a></li>
 		
-			<li><a href="/categories/笔记/">笔记<span>6</span></a></li>
+			<li><a href="/categories/笔记/">笔记<span>7</span></a></li>
 		
 		</ul>
 	</div>
@@ -1872,19 +1940,23 @@ note: run with <span class="token variable"><span class="token variable">`</span
 		<h4>标签云</h4>
 		<ul class="tag_box inline list-unstyled">		
 		
-			<li><a href="/tags/UE5/">UE5<span>1</span></a></li>
-		
 			<li><a href="/tags/github/">github<span>1</span></a></li>
 		
-			<li><a href="/tags/Rust/">Rust<span>2</span></a></li>
-		
-			<li><a href="/tags/git/">git<span>1</span></a></li>
+			<li><a href="/tags/UE5/">UE5<span>1</span></a></li>
 		
 			<li><a href="/tags/Tokio/">Tokio<span>1</span></a></li>
 		
+			<li><a href="/tags/WebGPU/">WebGPU<span>1</span></a></li>
+		
+			<li><a href="/tags/wasm/">wasm<span>1</span></a></li>
+		
+			<li><a href="/tags/git/">git<span>1</span></a></li>
+		
+			<li><a href="/tags/rust/">rust<span>1</span></a></li>
+		
 			<li><a href="/tags/Hexo/">Hexo<span>1</span></a></li>
 		
-			<li><a href="/tags/WebGPU/">WebGPU<span>1</span></a></li>
+			<li><a href="/tags/Rust/">Rust<span>2</span></a></li>
 		
 		 
 		</ul>
@@ -1896,6 +1968,10 @@ note: run with <span class="token variable"><span class="token variable">`</span
 <div class="widget">
   <h4>最新文章</h4>
   <ul class="entry list-unstyled">
+    
+      <li>
+        <a href="/2024/09/27/Rust和WASM/" ><i class="fa fa-file-o"></i>Rust 和 WASM</a>
+      </li>
     
       <li>
         <a href="/2024/09/25/LearnWebGPU/"  title="WebGPU学习笔记(持续更新中...)" ><i class="fa fa-file-o"></i>Learn WebGPU</a>
@@ -1911,10 +1987,6 @@ note: run with <span class="token variable"><span class="token variable">`</span
     
       <li>
         <a href="/2023/08/24/Rust学习笔记/"  title="2023.09.14持续更新笔记,主要是Rust的一些进阶语法" ><i class="fa fa-file-o"></i>Rust学习笔记</a>
-      </li>
-    
-      <li>
-        <a href="/2023/08/16/UE5随记/" ><i class="fa fa-file-o"></i>UE5随记</a>
       </li>
     
   </ul>
