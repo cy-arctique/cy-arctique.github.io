@@ -214,9 +214,7 @@ async fn main() &#123;
 <p>任务是调度程序管理的执行单元。<code>spawn</code> 生成任务会将其提交给Tokio 调度程序，然后由它负责调度执行。需要注意的是，执行任务的线程未必是创建任务的线程，任务完全有可能运行在另一个不同的线程上，而且任务在生成后，它还可能会在线程间被移动</p>
 <h3 id="‘static-约束"><a href="#‘static-约束" class="headerlink" title="‘static 约束"></a>‘static 约束</h3><p>当在Tokio 运行时生成任务时，其类型的生命周期必须是<code>&#39;static</code>。意味着，在任务中不能使用外部数据的引用</p>
 <blockquote>
-<blockquote>
 <p>这是一个常见的误解，<code>static</code> 总是意味着“永远活着”，但事实并非如此。仅仅因为某个值是<code>static</code> 并不意味着存在内存泄漏。<a target="_blank" rel="noopener" href="https://github.com/pretzelhammer/rust-blog/blob/master/posts/common-rust-lifetime-misconceptions.md#2-if-t-static-then-t-must-be-valid-for-the-entire-program">常见的Rust生命周期误解</a></p>
-</blockquote>
 </blockquote>
 <p>例如，以下内容将无法编译：</p>
 <pre class="line-numbers language-Rust" data-language="Rust"><code class="language-Rust">use tokio::task;
