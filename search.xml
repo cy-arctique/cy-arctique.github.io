@@ -1575,8 +1575,8 @@ async fn main() &#123;
       </tags>
   </entry>
   <entry>
-    <title>UE5随记</title>
-    <url>/2023/08/16/UE5%E9%9A%8F%E8%AE%B0/</url>
+    <title>UnrealEngine设置缓存路径</title>
+    <url>/2023/08/16/UnrealEngine%E8%AE%BE%E7%BD%AE%E7%BC%93%E5%AD%98%E8%B7%AF%E5%BE%84/</url>
     <content><![CDATA[<h2 id="设置缓存"><a href="#设置缓存" class="headerlink" title="设置缓存"></a>设置缓存</h2><h3 id="重置缓存路径"><a href="#重置缓存路径" class="headerlink" title="重置缓存路径"></a>重置缓存路径</h3><p>将系统默认的设置：所有项目的缓存文件都在系统盘下，修改为在各自项目目录下</p>
 <p>Win系统为例：</p>
 <ul>
@@ -1594,48 +1594,6 @@ async fn main() &#123;
       </categories>
       <tags>
         <tag>UE</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>关于Github失联的咪咪</title>
-    <url>/2023/09/19/%E5%85%B3%E4%BA%8Egithub%E5%A4%B1%E8%81%94%E7%9A%84%E5%92%AA%E5%92%AA/</url>
-    <content><![CDATA[<p><code>记录一些github的神经报错</code></p>
-<h2 id="Github网页正常访问-提交不了代码"><a href="#Github网页正常访问-提交不了代码" class="headerlink" title="Github网页正常访问, 提交不了代码"></a>Github网页正常访问, 提交不了代码</h2><p>报错信息如下:</p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">Connection reset by <span class="token number">20.205</span>.243.166 port <span class="token number">22</span>
-fatal: Could not <span class="token builtin class-name">read</span> from remote repository.
-
-Please <span class="token function">make</span> sure you have the correct access rights
-and the repository exists.<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-
-<p>解决方案:</p>
-<p>修改<code>.ssh</code> 目录下的配置文件<code>config</code></p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">Host github.com
-    port <span class="token number">22</span>
-    User <span class="token function">git</span>
-    HostName github.com
-    PreferredAuthentications publickey
-    IdentityFile ~/.ssh/id_rsa
-    <span class="token comment"># 端口号为你开启代理的端口号，这里7890是Clash默认端口号</span>
-    ProxyCommand connect <span class="token parameter variable">-S</span> <span class="token number">127.0</span>.0.1:7890 <span class="token parameter variable">-a</span> none %h %p<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-<ul>
-<li>User: 配置使用用户名</li>
-<li>HostName: 真实的域名地址</li>
-<li>PreferredAuthentications: 配置登录时使用什么权限认证, 可选值<code>publickey</code> <code>password</code> <code>keyboard-interactive</code></li>
-<li>IdentityFile: id_rsa密钥的路径</li>
-<li>ProxyCommand: 设置代理<ul>
-<li>-S: 代表走socks代理</li>
-<li>-H: 实现http和https的仓库clone</li>
-<li>%h: 扩展成hostname</li>
-<li>%p: 扩展成port</li>
-</ul>
-</li>
-</ul>
-]]></content>
-      <categories>
-        <category>笔记</category>
-      </categories>
-      <tags>
-        <tag>github</tag>
       </tags>
   </entry>
 </search>
