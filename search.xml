@@ -1638,6 +1638,31 @@ async fn main() &#123;
       </tags>
   </entry>
   <entry>
+    <title>UE配置Git版本控制</title>
+    <url>/2024/11/03/UE%E9%85%8D%E7%BD%AEGit%E7%89%88%E6%9C%AC%E6%8E%A7%E5%88%B6/</url>
+    <content><![CDATA[<blockquote>
+<p>事先需要安装 <code>Git LFS</code></p>
+</blockquote>
+<p>在UE中将项目添加到Git版本控制, 并开启LFS</p>
+<p><img src="https://github.com/cy-arctique/img/blob/main/blog_img/UE%E7%89%88%E6%9C%AC%E6%8E%A7%E5%88%B600.png?raw=true" alt="Git Control"  data-tag='post-image' loading="lazy" onerror='this.onerror=null;this.src="/img/404.jpg"'></p>
+<p>.gitattributes 配置</p>
+<pre class="line-numbers language-txt" data-language="txt"><code class="language-txt">Content/** filter=lfs diff=lfs merge=lfs -text
+.uasset filter=lfs diff=lfs merge=lfs -text<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+
+<blockquote>
+<p>注意: 需要先 push <code>.gitattributes</code>, 之后再提交其他文件</p>
+</blockquote>
+]]></content>
+      <categories>
+        <category>笔记</category>
+      </categories>
+      <tags>
+        <tag>Git</tag>
+        <tag>UE</tag>
+        <tag>LFS</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>UnrealEngine设置缓存路径</title>
     <url>/2023/08/16/UnrealEngine%E8%AE%BE%E7%BD%AE%E7%BC%93%E5%AD%98%E8%B7%AF%E5%BE%84/</url>
     <content><![CDATA[<h2 id="设置缓存"><a href="#设置缓存" class="headerlink" title="设置缓存"></a>设置缓存</h2><h3 id="重置缓存路径"><a href="#重置缓存路径" class="headerlink" title="重置缓存路径"></a>重置缓存路径</h3><p>将系统默认的设置：所有项目的缓存文件都在系统盘下，修改为在各自项目目录下</p>

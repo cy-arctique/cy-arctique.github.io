@@ -7,19 +7,27 @@
 <meta name="full-screen" content="yes">
 <meta name="theme-color" content="#317EFB" />
 <meta content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=0" name="viewport">
-<meta property="og:type" content="website">
-<meta property="og:title" content="Arctique">
-<meta property="og:url" content="https://cy-arctique.github.io/tags/Rust/index.html">
+<meta name="description" content="事先需要安装 Git LFS  在UE中将项目添加到Git版本控制, 并开启LFS  .gitattributes 配置 Content&#x2F;** filter&#x3D;lfs diff&#x3D;lfs merge&#x3D;lfs -text .uasset filter&#x3D;lfs diff&#x3D;lfs merge&#x3D;lfs -text   注意: 需要先 push .gitattributes, 之后再提交其他文件">
+<meta property="og:type" content="article">
+<meta property="og:title" content="UE配置Git版本控制">
+<meta property="og:url" content="https://cy-arctique.github.io/2024/11/03/UE%E9%85%8D%E7%BD%AEGit%E7%89%88%E6%9C%AC%E6%8E%A7%E5%88%B6/index.html">
 <meta property="og:site_name" content="Arctique">
+<meta property="og:description" content="事先需要安装 Git LFS  在UE中将项目添加到Git版本控制, 并开启LFS  .gitattributes 配置 Content&#x2F;** filter&#x3D;lfs diff&#x3D;lfs merge&#x3D;lfs -text .uasset filter&#x3D;lfs diff&#x3D;lfs merge&#x3D;lfs -text   注意: 需要先 push .gitattributes, 之后再提交其他文件">
 <meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://cy-arctique.github.io/img/404.jpg">
+<meta property="article:published_time" content="2024-11-03T10:11:21.000Z">
+<meta property="article:modified_time" content="2024-11-03T10:41:08.140Z">
 <meta property="article:author" content="Arctique">
-<meta property="article:tag" content="Arctique, arctique, cy.arctique, Zig, C++, cpp, Java, java">
+<meta property="article:tag" content="Git">
+<meta property="article:tag" content="UE">
+<meta property="article:tag" content="LFS">
 <meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://cy-arctique.github.io/img/404.jpg">
 
     <meta name="keywords" content="Arctique, arctique, cy.arctique, Zig, C++, cpp, Java, java">
 
 
-<title >Arctique</title>
+<title >UE配置Git版本控制</title>
 
 <!-- Favicon -->
 
@@ -60,7 +68,7 @@
 
 <!-- Variable -->
 <script>window.ASYNC_CONFIG = {"hostname":"cy-arctique.github.io","author":"Arctique","root":"/","typed_text":["学习使人进化!"],"theme_version":"2.2.3","theme":{"switch":true,"default":"style-dark"},"favicon":{"logo":"assets/favicon.png","icon16":"assets/favicon.png","icon32":"assets/favicon.png","apple_touch_icon":"assets/favicon.png","webmanifest":null,"visibilitychange":true,"hidden":"assets/favicon.png","show_text":"(/≧▽≦/)咦！又好了！","hide_text":"(●—●)喔哟，崩溃啦！"},"i18n":{"placeholder":"搜索文章...","empty":"找不到您查询的内容: ${query}","hits":"找到 ${hits} 条结果","hits_time":"找到 ${hits} 条结果（用时 ${time} 毫秒）","author":"本文作者：","copyright_link":"本文链接：","copyright_license_title":"版权声明：","copyright_license_content":"本博客所有文章除特别声明外，均默认采用 undefined 许可协议。","copy_success":"复制成功","copy_failure":"复制失败","open_read_mode":"进入阅读模式","exit_read_mode":"退出阅读模式","notice_outdate_message":"距离上次更新已经 undefined 天了, 文章内容可能已经过时。","sticky":"置顶","just":"刚刚","min":"分钟前","hour":"小时前","day":"天前","month":"个月前"},"swup":false,"plugin":{"flickr_justified_gallery":"https://unpkg.com/flickr-justified-gallery@latest/dist/fjGallery.min.js"},"icons":{"sun":"far fa-sun","moon":"far fa-moon","play":"fas fa-play","email":"far fa-envelope","next":"fas fa-arrow-right","calendar":"far fa-calendar-alt","clock":"far fa-clock","user":"far fa-user","back_top":"fas fa-arrow-up","close":"fas fa-times","search":"fas fa-search","reward":"fas fa-hand-holding-usd","toc_tag":"fas fa-th-list","read":"fas fa-book-reader","arrows":"fas fa-arrows-alt-h","double_arrows":"fas fa-angle-double-down","copy":"fas fa-copy"},"icontype":"font","highlight":{"plugin":"prismjs","theme":true,"copy":true,"lang":false,"title":"default","height_limit":200},"toc":{"post_title":false},"live_time":{"start_time":"07/13/2023 00:00:00","prefix":"博客已萌萌哒运行 undefined 天"},"danmu":{"enable":true,"el":".trm-banner","avatar":true,"delayRange":5000,"speed":80},"creative_commons":{"license":"by-nc-sa","language":"deed.zh-hans"},"notice_outdate":{"enable":true,"style":"flat","limit_day":365,"position":"top"},"search":{"enable":true,"type":"local","href":"https://www.google.com/search?q=site:","domain":null,"path":"search.xml"}};</script>
-<script id="async-page-config">window.PAGE_CONFIG = {"isPost":false,"isHome":false,"postUpdate":"2024-11-03 18:41:24"};</script>
+<script id="async-page-config">window.PAGE_CONFIG = {"isPost":true,"isHome":false,"postUpdate":"2024-11-03 18:41:08"};</script>
 
 <!-- Theme mode css -->
 <link data-swup-theme rel="stylesheet" href="/css/index.css?v=2.2.3" id="trm-switch-style">
@@ -225,7 +233,7 @@
     <div class="trm-banner">
     
     <!-- banner cover -->
-    <img style="object-position:top;object-fit:cover;" alt="banner" class="trm-banner-cover" src="https://pic1.zhimg.com/v2-b3c2c6745b9421a13a3c4706b19223b3_r.jpg?source=1940ef5c">
+    <img style="object-position:top;object-fit:cover;" alt="banner" class="trm-banner-cover" src="https://github.com/cy-arctique/img/blob/main/blog_img/ue.png?raw=true">
     <!-- banner cover end -->
     
 
@@ -241,10 +249,10 @@
                     <!-- banner title -->
                     <div class="trm-banner-text ">
                         <div class="trm-label trm-mb-20">
-                            Hi my new friend!
+                            
                         </div>
                         <h1 class="trm-mb-30 trm-hsmb-font">
-                            力大砖飞
+                            UE配置Git版本控制
                         </h1>
 
                         
@@ -254,7 +262,7 @@
                                 </li>
                                 <li>
                                     <span>
-                                        tags
+                                        2024
                                     </span>
                                 </li>
                             </ul>
@@ -347,125 +355,142 @@
             
             <div class="trm-page-content col-lg-8">
                 <div id="trm-content" class="trm-content">
-                    <div class="row">
-    <div class="col-lg-12">
-        <div class="trm-card">
-            <div style="padding: 0 20px;">
-                
-                    <ul class="trm-tag-list" itemprop="keywords"><li class="trm-tag-list-item"><a class="tag-list-link" href="/tags/Git/" rel="tag">Git</a><span class="tag-list-count">2</span></li><li class="trm-tag-list-item"><a class="tag-list-link" href="/tags/Hexo/" rel="tag">Hexo</a><span class="tag-list-count">1</span></li><li class="trm-tag-list-item"><a class="tag-list-link" href="/tags/LFS/" rel="tag">LFS</a><span class="tag-list-count">1</span></li><li class="trm-tag-list-item"><a class="tag-list-link" href="/tags/Rust/" rel="tag">Rust</a><span class="tag-list-count">3</span></li><li class="trm-tag-list-item"><a class="tag-list-link" href="/tags/Tokio/" rel="tag">Tokio</a><span class="tag-list-count">1</span></li><li class="trm-tag-list-item"><a class="tag-list-link" href="/tags/UE/" rel="tag">UE</a><span class="tag-list-count">2</span></li><li class="trm-tag-list-item"><a class="tag-list-link" href="/tags/Wasm/" rel="tag">Wasm</a><span class="tag-list-count">1</span></li><li class="trm-tag-list-item"><a class="tag-list-link" href="/tags/WebGPU/" rel="tag">WebGPU</a><span class="tag-list-count">1</span></li></ul>
-                
-            </div>
+                    <div class="trm-post-info row hidden-sm">
+    <div class="col-sm-4">
+        <div class="trm-card trm-label trm-label-light text-center">
+            <i class="iconfont far fa-calendar-alt trm-icon"></i><br>
+            2024-11-03
+        </div>
+    </div>
+    <div class="col-sm-4">
+        <div class="trm-card trm-label trm-label-light text-center">
+            <i class="iconfont far fa-clock trm-icon"></i><br>
+            18:41:08
+        </div>
+    </div>
+    <div class="col-sm-4">
+        <div id="post-author" class="trm-card trm-label trm-label-light text-center">
+            <i class="iconfont far fa-user trm-icon"></i><br>
+            Arctique
         </div>
     </div>
 </div>
+<div class="trm-card ">
+    <article id="article-container" class="trm-publication">
+    <blockquote>
+<p>事先需要安装 <code>Git LFS</code></p>
+</blockquote>
+<p>在UE中将项目添加到Git版本控制, 并开启LFS</p>
+<p><img src="https://github.com/cy-arctique/img/blob/main/blog_img/UE%E7%89%88%E6%9C%AC%E6%8E%A7%E5%88%B600.png?raw=true" alt="Git Control"  data-tag='post-image' loading="lazy" onerror='this.onerror=null;this.src="/img/404.jpg"'></p>
+<p>.gitattributes 配置</p>
+<pre class="line-numbers language-txt" data-language="txt"><code class="language-txt">Content/** filter=lfs diff=lfs merge=lfs -text
+.uasset filter=lfs diff=lfs merge=lfs -text<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
 
-<!-- history -->
+<blockquote>
+<p>注意: 需要先 push <code>.gitattributes</code>, 之后再提交其他文件</p>
+</blockquote>
 
-<div class="row">
+</article>
+    
+    <div class="trm-reward">
+        
+            <span class="trm-reward-btn trm-glow" onclick='var qr = document.getElementById("qr"); qr.style.display = (qr.style.display === "none") ? "block" : "none";'>
+                <i class="iconfont fas fa-hand-holding-usd"></i>
+            </span>
+        
+        <p class="trm-reward-comment">I'm so cute. Please give me money.</p>
+        <div id="qr" style="display:none;">
+            
+                <div style="display:inline-block">
+                    <a rel="noopener noreferrer" href='assets/zhifubao.png' target='_blank' >
+                       <img src="/assets/zhifubao.png" alt="支付宝" loading="lazy">
+                    </a>
+                    <p>支付宝</p>
+                </div>
+            
+        </div>
+    </div>
+
+    
+
+</div>
+<div class="trm-post-next-prev row">
     <div class="col-lg-12">
         <!-- title -->
         <h5 class="trm-title-with-divider">
-            
-                Rust
-            
-            <span data-number="01"></span>
+            其他文章
+            <span data-number="02"></span>
         </h5>
     </div>
-    <div class="col-lg-12">
-        <!-- timeline -->
-        <div class="trm-timeline">
+    
+    
+        <div class="col-lg-6">
+    <div class="trm-older-publications-card trm-scroll-animation trm-active-el">
+        <div class="trm-older-publication">
             
-            <div class="trm-timeline-item trm-scroll-animation">
-                <div class="trm-timeline-mark-light"></div>
-                <div class="trm-timeline-mark"></div>
-                <div class="trm-timeline-content more">
-                    
-                        <div class="trm-card-header">
-                            <div class="trm-left-side">
-                                <h6>
-                                    <a href="/2024/09/27/Rust%E5%92%8CWASM/" class="trm-anima-link">
-                                        Rust和WASM
-                                    </a>
-                                </h6>
-                                <div class="trm-text-sm trm-accent-color trm-mt-15">
-                                    <ul class="trm-card-data trm-label ">
-                                        <li class="trm-accent-color">2024-09-27</li>
-                                        <li class="trm-accent-color">13:43:05</li>
-                                        
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-                        
-                    
-                </div>
-            </div>
-            
-            <div class="trm-timeline-item trm-scroll-animation">
-                <div class="trm-timeline-mark-light"></div>
-                <div class="trm-timeline-mark"></div>
-                <div class="trm-timeline-content more">
-                    
-                        <div class="trm-card-header">
-                            <div class="trm-left-side">
-                                <h6>
-                                    <a href="/2023/09/04/Tokio%E9%9A%8F%E8%AE%B0/" class="trm-anima-link">
-                                        Tokio随记
-                                    </a>
-                                </h6>
-                                <div class="trm-text-sm trm-accent-color trm-mt-15">
-                                    <ul class="trm-card-data trm-label ">
-                                        <li class="trm-accent-color">2023-09-04</li>
-                                        <li class="trm-accent-color">14:20:26</li>
-                                        
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-                        
-                    
-                </div>
-            </div>
-            
-            <div class="trm-timeline-item trm-scroll-animation">
-                <div class="trm-timeline-mark-light"></div>
-                <div class="trm-timeline-mark"></div>
-                <div class="trm-timeline-content more">
-                    
-                        <div class="trm-card-header">
-                            <div class="trm-left-side">
-                                <h6>
-                                    <a href="/2023/08/24/Rust%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" class="trm-anima-link">
-                                        Rust学习笔记
-                                    </a>
-                                </h6>
-                                <div class="trm-text-sm trm-accent-color trm-mt-15">
-                                    <ul class="trm-card-data trm-label ">
-                                        <li class="trm-accent-color">2023-08-24</li>
-                                        <li class="trm-accent-color">14:05:39</li>
-                                        
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-                        
-                    
-                </div>
-            </div>
-            
+            <a class="trm-op-top trm-anima-link" href="/2024/09/27/Rust%E5%92%8CWASM/">
+                <span class="trm-op-cover">
+                    <img alt="cover" class="no-fancybox" src="https://github.com/cy-arctique/img/blob/main/blog_img/rust_wasm.jpg?raw=true">
+                </span>
+                <h6 class="trm-op-title">Rust和WASM</h6>
+            </a>
+            <div class="trm-divider trm-mb-15 trm-mt-20"></div>
+            <ul class="trm-card-data trm-label">
+                <li>2024-09-27</li>
+                <li>13:43:05</li>
+                <li>笔记</li>
+            </ul>
         </div>
-        <!-- timeline end -->
     </div>
 </div>
+    
+</div>
 
-<!-- history end -->
+    
 
+    <div id="giscus-wrap" class="trm-card trm-scroll-animation comment-container"></div>
+<script data-swup-reload-script>
+    function loadGiscus() {
+        let nowTheme = document.documentElement.classList.contains('dark') ? 'dark' : 'light'
+        const config = {
+            src: 'https://giscus.app/client.js',
+            "data-repo": 'cy-arctique/cy-arctique.github.io',
+            "data-repo-id": 'R_kgDOJ7X2tw',
+            "data-category": 'Announcements',
+            "data-category-id": 'DIC_kwDOJ7X2t84CjXsS',
+            "data-mapping": 'pathname',
+            "data-reactions-enabled": '1',
+            "data-emit-metadata": '0',
+            "data-theme": nowTheme,
+            "data-lang": 'zh-CN',
+            crossorigin: "anonymous",
+            async: true
+        }
+        let ele = document.createElement('script')
+        for (let key in config) {
+            ele.setAttribute(key, config[key])
+        }
+        document.getElementById('giscus-wrap').insertAdjacentElement('afterbegin', ele)
+    }
 
-    <div class="trm-pagination">
-        <span class="page-number current">1</span>
-    </div>
+    function changeGiscusTheme() {
+        let theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light'
 
+        function sendMessage(message) {
+            const iframe = document.querySelector('iframe.giscus-frame');
+            if (!iframe) return;
+            iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+        }
 
+        sendMessage({
+            setConfig: {
+                theme: theme
+            }
+        });
+    }
+
+    loadGiscus();
+</script>
 
 
 
@@ -518,6 +543,10 @@
             
 <div class="trm-fixed-container">
     
+    
+        <div class="trm-fixed-btn" data-title="阅读模式" onclick="asyncFun.switchReadMode()">
+            <i class="iconfont fas fa-book-reader"></i>
+        </div>
     
     
         <div class="trm-fixed-btn hidden-md" data-title="单栏和双栏切换" onclick="asyncFun.switchSingleColumn()">
@@ -598,6 +627,10 @@
     
 
     <!-- 评论插件 -->
+    
+        
+
+        
     
 
 		
