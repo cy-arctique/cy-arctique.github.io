@@ -1685,10 +1685,11 @@ async fn main() &#123;
       </tags>
   </entry>
   <entry>
-    <title>c3c源码构建</title>
-    <url>/2025/03/20/c3c%E6%BA%90%E7%A0%81%E6%9E%84%E5%BB%BA/</url>
-    <content><![CDATA[<p>关于 c3 从源码构建, 遇到的一些坑</p>
-<h2 id="事前准备"><a href="#事前准备" class="headerlink" title="事前准备"></a>事前准备</h2><p>目标平台是 <code>windows</code>, 其他平台不在此笔记中记载</p>
+    <title>编译C3C源码</title>
+    <url>/2025/03/20/%E7%BC%96%E8%AF%91C3C%E6%BA%90%E7%A0%81/</url>
+    <content><![CDATA[<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>关于 c3c 从源码构建, 遇到的一些坑: 当前 (<code>2025-03-21</code>) 根据 c3c 文档中介绍的从源码构建, 简单的几行命令就可以 build 出来编译器了, 但我在实际的操作中, 一直卡在 <code>Loading Windows LLVM libraries, this may take a while...</code>, 重试几次无果, 于是乎翻构建脚本看看</p>
+<hr>
+<h2 id="准备"><a href="#准备" class="headerlink" title="准备"></a>准备</h2><p>目标平台是 <code>windows</code>, 其他平台不在此笔记中记载</p>
 <blockquote>
 <p>因为我主力机是 <code>windows</code>, 所以 <code>Unix</code> 系列没去 build, 听群友说是无痛编译</p>
 </blockquote>
@@ -1705,7 +1706,7 @@ async fn main() &#123;
 <li>cmake</li>
 </ul>
 <h2 id="构建"><a href="#构建" class="headerlink" title="构建"></a>构建</h2><ul>
-<li>git clone <a href="mailto:&#103;&#x69;&#116;&#x40;&#x67;&#x69;&#x74;&#104;&#x75;&#98;&#46;&#x63;&#111;&#109;">&#103;&#x69;&#116;&#x40;&#x67;&#x69;&#x74;&#104;&#x75;&#98;&#46;&#x63;&#111;&#109;</a>:c3lang&#x2F;c3c.git</li>
+<li>git clone <a href="mailto:&#x67;&#105;&#116;&#64;&#x67;&#105;&#116;&#x68;&#117;&#98;&#46;&#x63;&#111;&#x6d;">&#x67;&#105;&#116;&#64;&#x67;&#105;&#116;&#x68;&#117;&#98;&#46;&#x63;&#111;&#x6d;</a>:c3lang&#x2F;c3c.git</li>
 <li>cd c3c</li>
 <li>修改 <code>CMakeLists.txt</code><ul>
 <li>line: 121 ~ 152  <pre class="line-numbers language-cmake" data-language="cmake"><code class="language-cmake"><span class="token comment"># if(CMAKE_C_COMPILER_ID STREQUAL "MSVC")</span>
@@ -1772,13 +1773,15 @@ async fn main() &#123;
 Launching helloworld.exe
 Hello, World!
 Program completed with exit code 0.<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
+
+<hr>
 ]]></content>
       <categories>
         <category>笔记</category>
       </categories>
       <tags>
-        <tag>c3c</tag>
-        <tag>源码构建</tag>
+        <tag>C3C</tag>
+        <tag>C3</tag>
       </tags>
   </entry>
 </search>
