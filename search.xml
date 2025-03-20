@@ -1684,4 +1684,101 @@ async fn main() &#123;
         <tag>UE</tag>
       </tags>
   </entry>
+  <entry>
+    <title>c3c源码构建</title>
+    <url>/2025/03/20/c3c%E6%BA%90%E7%A0%81%E6%9E%84%E5%BB%BA/</url>
+    <content><![CDATA[<p>关于 c3 从源码构建, 遇到的一些坑</p>
+<h2 id="事前准备"><a href="#事前准备" class="headerlink" title="事前准备"></a>事前准备</h2><p>目标平台是 <code>windows</code>, 其他平台不在此笔记中记载</p>
+<blockquote>
+<p>因为我主力机是 <code>windows</code>, 所以 <code>Unix</code> 系列没去 build, 听群友说是无痛编译</p>
+</blockquote>
+<hr>
+<p>开始之前列举一下相关文档:</p>
+<ul>
+<li><a href="https://c3-lang.org/getting-started/">c3官方文档</a>, 安装, 使用的详情都在这了</li>
+<li><a href="https://github.com/c3lang/win-llvm/releases/tag/llvm_19_1_5">c3文档指向的 llvm 版本</a>, 我是直接到 <a href="https://github.com/llvm/llvm-project/releases">llvm仓库自己安装的</a>, 版本大于 <code>19.1.5</code> 应该问题都不大</li>
+<li><a href="git@github.com:c3lang/c3c.git">c3源码</a>, <code>git clone git@github.com:c3lang/c3c.git</code></li>
+</ul>
+<p>build前需要准备的环境如下:</p>
+<ul>
+<li>msvc, <code>visual studio installer</code> 中勾选上 <code>使用 C++ 的桌面开发</code> 安装即可 (这里如果不适用 msvc, 改用 mingw 应该也可以, 但是我没有实践)</li>
+<li>cmake</li>
+</ul>
+<h2 id="构建"><a href="#构建" class="headerlink" title="构建"></a>构建</h2><ul>
+<li>git clone <a href="mailto:&#103;&#x69;&#116;&#x40;&#x67;&#x69;&#x74;&#104;&#x75;&#98;&#46;&#x63;&#111;&#109;">&#103;&#x69;&#116;&#x40;&#x67;&#x69;&#x74;&#104;&#x75;&#98;&#46;&#x63;&#111;&#109;</a>:c3lang&#x2F;c3c.git</li>
+<li>cd c3c</li>
+<li>修改 <code>CMakeLists.txt</code><ul>
+<li>line: 121 ~ 152  <pre class="line-numbers language-cmake" data-language="cmake"><code class="language-cmake"><span class="token comment"># if(CMAKE_C_COMPILER_ID STREQUAL "MSVC")</span>
+<span class="token comment">#     if (C3_LLVM_VERSION STREQUAL "auto")</span>
+<span class="token comment">#         set(C3_LLVM_VERSION "19")</span>
+<span class="token comment">#     endif()</span>
+<span class="token comment">#     FetchContent_Declare(</span>
+<span class="token comment">#             LLVM_Windows</span>
+<span class="token comment">#             URL https://github.com/c3lang/win-llvm/releases/download/llvm_19_1_5/llvm-19.1.5-windows-amd64-msvc17-libcmt.7z</span>
+<span class="token comment">#     )</span>
+<span class="token comment">#     FetchContent_Declare(</span>
+<span class="token comment">#             LLVM_Windows_debug</span>
+<span class="token comment">#             URL https://github.com/c3lang/win-llvm/releases/download/llvm_19_1_5/llvm-19.1.5-windows-amd64-msvc17-libcmt-dbg.7z</span>
+<span class="token comment">#     )</span>
+<span class="token comment">#     if(CMAKE_BUILD_TYPE STREQUAL "Debug")</span>
+<span class="token comment">#         message("Loading Windows LLVM debug libraries, this may take a while...")</span>
+<span class="token comment">#         FetchContent_MakeAvailable(LLVM_Windows_debug)</span>
+<span class="token comment">#         set(llvm_dir $&#123;llvm_windows_debug_SOURCE_DIR&#125;)</span>
+<span class="token comment">#     else()</span>
+<span class="token comment">#         message("Loading Windows LLVM libraries, this may take a while...")</span>
+<span class="token comment">#         FetchContent_MakeAvailable(LLVM_Windows)</span>
+<span class="token comment">#         set(llvm_dir $&#123;llvm_windows_SOURCE_DIR&#125;)</span>
+<span class="token comment">#     endif()</span>
+<span class="token comment">#     set(CMAKE_SYSTEM_PREFIX_PATH $&#123;llvm_dir&#125; $&#123;CMAKE_SYSTEM_PREFIX_PATH&#125;)</span>
+
+<span class="token comment">#     find_package(LLVM REQUIRED CONFIG)</span>
+<span class="token comment">#     find_package(LLD REQUIRED CONFIG)</span>
+<span class="token comment"># else()</span>
+<span class="token comment">#     if (NOT C3_LLVM_VERSION STREQUAL "auto")</span>
+<span class="token comment">#         find_package(LLVM $&#123;C3_LLVM_VERSION&#125; REQUIRED CONFIG)</span>
+<span class="token comment">#     else()</span>
+<span class="token comment">#         find_package(LLVM REQUIRED CONFIG)</span>
+<span class="token comment">#     endif()</span>
+<span class="token comment"># endif()</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre></li>
+<li>上面部分 cmake 脚本是默认 msvc 环境下就会去远端拉取 llvm 环境, 注释掉或者直接删除, 替换成下面的脚本. 其中 <code>LLVM_DIR</code> 设置成自己 llvm 实际的安装路径即可  <pre class="line-numbers language-cmake" data-language="cmake"><code class="language-cmake"><span class="token keyword">if</span><span class="token punctuation">(</span><span class="token variable">CMAKE_C_COMPILER_ID</span> <span class="token operator">STREQUAL</span> <span class="token string">"MSVC"</span><span class="token punctuation">)</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token variable">C3_LLVM_VERSION</span> <span class="token operator">STREQUAL</span> <span class="token string">"auto"</span><span class="token punctuation">)</span>
+        <span class="token keyword">set</span><span class="token punctuation">(</span><span class="token variable">C3_LLVM_VERSION</span> <span class="token string">"19.1.5"</span><span class="token punctuation">)</span>
+    <span class="token keyword">endif</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+
+    <span class="token comment"># 手动设置本地 LLVM</span>
+    <span class="token keyword">set</span><span class="token punctuation">(</span>LLVM_DIR <span class="token string">"D:/LLVM"</span> <span class="token variable">CACHE</span> PATH <span class="token string">"Path to LLVM cmake directory"</span><span class="token punctuation">)</span>
+    <span class="token keyword">find_package</span><span class="token punctuation">(</span>LLVM <span class="token punctuation">$&#123;</span><span class="token variable">C3_LLVM_VERSION</span><span class="token punctuation">&#125;</span> REQUIRED CONFIG<span class="token punctuation">)</span>
+    <span class="token keyword">find_package</span><span class="token punctuation">(</span>LLD REQUIRED CONFIG<span class="token punctuation">)</span>
+<span class="token keyword">else</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">NOT</span> <span class="token variable">C3_LLVM_VERSION</span> <span class="token operator">STREQUAL</span> <span class="token string">"auto"</span><span class="token punctuation">)</span>
+        <span class="token keyword">find_package</span><span class="token punctuation">(</span>LLVM <span class="token punctuation">$&#123;</span><span class="token variable">C3_LLVM_VERSION</span><span class="token punctuation">&#125;</span> REQUIRED CONFIG<span class="token punctuation">)</span>
+    <span class="token keyword">else</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token keyword">find_package</span><span class="token punctuation">(</span>LLVM REQUIRED CONFIG<span class="token punctuation">)</span>
+    <span class="token keyword">endif</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token keyword">endif</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre></li>
+</ul>
+</li>
+<li>mkdir build</li>
+<li>cd build</li>
+<li>cmake ..</li>
+<li>cmake –build .</li>
+</ul>
+<p>构建完毕, <code>build</code> 目录下生成 <code>c3c.exe</code></p>
+<h2 id="测试"><a href="#测试" class="headerlink" title="测试"></a>测试</h2><p>还是在 <code>build</code> 目录中</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">c3c compile-run  <span class="token punctuation">..</span>/resources/testfragments/helloworld.c3<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<p>打印输出如下, 即 <code>c3c</code> 环境搭建完成</p>
+<pre class="line-numbers language-txt" data-language="txt"><code class="language-txt">E:\Code\c3c\build>c3c compile-run  ../resources/testfragments/helloworld.c3
+Launching helloworld.exe
+Hello, World!
+Program completed with exit code 0.<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
+]]></content>
+      <categories>
+        <category>笔记</category>
+      </categories>
+      <tags>
+        <tag>c3c</tag>
+        <tag>源码构建</tag>
+      </tags>
+  </entry>
 </search>
