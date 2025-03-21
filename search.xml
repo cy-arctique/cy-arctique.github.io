@@ -1703,8 +1703,11 @@ async fn main() &#123;
 <li>msvc, <strong>「visual studio installer」</strong> 中勾选上 <strong>「使用 C++ 的桌面开发」</strong> 安装即可 (这里如果不适用 msvc, 改用 mingw 应该也可以, 但是我没有实践)</li>
 <li>cmake</li>
 </ul>
-<h2 id="构建"><a href="#构建" class="headerlink" title="构建"></a>构建</h2><ul>
-<li>git clone <a href="mailto:&#x67;&#105;&#x74;&#x40;&#x67;&#x69;&#116;&#x68;&#117;&#x62;&#x2e;&#x63;&#x6f;&#x6d;">&#x67;&#105;&#x74;&#x40;&#x67;&#x69;&#116;&#x68;&#117;&#x62;&#x2e;&#x63;&#x6f;&#x6d;</a>:c3lang&#x2F;c3c.git</li>
+<h2 id="构建"><a href="#构建" class="headerlink" title="构建"></a>构建</h2><blockquote>
+<p>直接跳到 <a href="./%E7%BC%96%E8%AF%91C3C%E6%BA%90%E7%A0%81.md/#%E8%A1%A5%E5%85%85">补充</a> 段落修改编译脚本(简单省事), 然后再根据下面的命令执行步骤跑一遍就可以了</p>
+</blockquote>
+<ul>
+<li>git clone <a href="mailto:&#x67;&#x69;&#x74;&#64;&#x67;&#105;&#116;&#x68;&#117;&#98;&#x2e;&#99;&#111;&#109;">&#x67;&#x69;&#x74;&#64;&#x67;&#105;&#116;&#x68;&#117;&#98;&#x2e;&#99;&#111;&#109;</a>:c3lang&#x2F;c3c.git</li>
 <li>cd c3c</li>
 <li>修改 <code>CMakeLists.txt</code><ul>
 <li>line: 121 ~ 152  <pre class="line-numbers language-cmake" data-language="cmake"><code class="language-cmake"><span class="token comment"># if(CMAKE_C_COMPILER_ID STREQUAL "MSVC")</span>
@@ -1763,6 +1766,22 @@ async fn main() &#123;
 <li>cmake –build .</li>
 </ul>
 <p>构建完毕, <code>build</code> 目录下生成 <code>c3c.exe</code></p>
+<h3 id="补充"><a href="#补充" class="headerlink" title="补充"></a>补充</h3><p>莫名奇妙的, 第二天到公司电脑编源码, 还是一样的配置 环境, 硬是不行 (找不到问题, 后面把 <code>CMakeLists.txt</code> 一通乱改测试编译), 后面发现没必要改这么一大段, 简单替换一下 fetch 部分就好了:</p>
+<blockquote>
+<p>我就只下载了一个 debug 的 llvm, 所以替换成一样的了</p>
+</blockquote>
+<pre class="line-numbers language-cmake" data-language="cmake"><code class="language-cmake"><span class="token keyword">if</span><span class="token punctuation">(</span><span class="token variable">CMAKE_BUILD_TYPE</span> <span class="token operator">STREQUAL</span> <span class="token string">"Debug"</span><span class="token punctuation">)</span>
+    <span class="token keyword">message</span><span class="token punctuation">(</span><span class="token string">"Loading Windows LLVM debug libraries, this may take a while..."</span><span class="token punctuation">)</span>
+    <span class="token comment"># FetchContent_MakeAvailable(LLVM_Windows_debug)</span>
+    <span class="token keyword">set</span><span class="token punctuation">(</span>llvm_dir <span class="token string">"D:/llvm-19.1.5-windows-amd64-msvc17-libcmt-dbg"</span> <span class="token variable">CACHE</span> PATH <span class="token string">"Path to LLVM cmake directory"</span><span class="token punctuation">)</span>
+    <span class="token keyword">set</span><span class="token punctuation">(</span>llvm_dir <span class="token punctuation">$&#123;</span><span class="token variable">llvm_windows_debug_SOURCE_DIR</span><span class="token punctuation">&#125;</span><span class="token punctuation">)</span>
+<span class="token keyword">else</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+    <span class="token keyword">message</span><span class="token punctuation">(</span><span class="token string">"Loading Windows LLVM libraries, this may take a while..."</span><span class="token punctuation">)</span>
+    <span class="token comment"># FetchContent_MakeAvailable(LLVM_Windows)</span>
+    <span class="token keyword">set</span><span class="token punctuation">(</span>llvm_dir <span class="token string">"D:/llvm-19.1.5-windows-amd64-msvc17-libcmt-dbg"</span> <span class="token variable">CACHE</span> PATH <span class="token string">"Path to LLVM cmake directory"</span><span class="token punctuation">)</span>
+    <span class="token keyword">set</span><span class="token punctuation">(</span>llvm_dir <span class="token punctuation">$&#123;</span><span class="token variable">llvm_windows_SOURCE_DIR</span><span class="token punctuation">&#125;</span><span class="token punctuation">)</span>
+<span class="token keyword">endif</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
 <h2 id="测试"><a href="#测试" class="headerlink" title="测试"></a>测试</h2><p>还是在 <code>build</code> 目录中</p>
 <pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">c3c compile-run  <span class="token punctuation">..</span>/resources/testfragments/helloworld.c3<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
 
