@@ -1695,7 +1695,7 @@ async fn main() &#123;
 <p>开始之前列举一下相关文档:</p>
 <ul>
 <li><a href="https://c3-lang.org/getting-started/">c3官方文档</a>, 安装, 使用的详情都在这了</li>
-<li><a href="https://github.com/c3lang/win-llvm/releases/tag/llvm_19_1_5">c3文档指向的 llvm 版本</a>, 我是直接到 <a href="https://github.com/llvm/llvm-project/releases">llvm仓库自己安装的</a>, 版本大于 <code>19.1.5</code> 应该问题都不大</li>
+<li><a href="https://github.com/c3lang/win-llvm/releases/tag/llvm_19_1_5">c3文档指向的 llvm 版本</a>, 我是直接到 <a href="https://github.com/llvm/llvm-project/releases">llvm仓库自己安装的</a></li>
 <li><a href="git@github.com:c3lang/c3c.git">c3源码</a>, <code>git clone git@github.com:c3lang/c3c.git</code></li>
 </ul>
 <p>build前需要准备的环境如下:</p>
@@ -1704,7 +1704,7 @@ async fn main() &#123;
 <li>cmake</li>
 </ul>
 <h2 id="构建"><a href="#构建" class="headerlink" title="构建"></a>构建</h2><ul>
-<li>git clone <a href="mailto:&#103;&#105;&#x74;&#x40;&#103;&#x69;&#116;&#104;&#117;&#98;&#46;&#x63;&#111;&#x6d;">&#103;&#105;&#x74;&#x40;&#103;&#x69;&#116;&#104;&#117;&#98;&#46;&#x63;&#111;&#x6d;</a>:c3lang&#x2F;c3c.git</li>
+<li>git clone <a href="mailto:&#x67;&#x69;&#116;&#x40;&#103;&#105;&#116;&#104;&#117;&#98;&#x2e;&#99;&#111;&#x6d;">&#x67;&#x69;&#116;&#x40;&#103;&#105;&#116;&#104;&#117;&#98;&#x2e;&#99;&#111;&#x6d;</a>:c3lang&#x2F;c3c.git</li>
 <li>cd c3c</li>
 <li>修改 <code>CMakeLists.txt</code><ul>
 <li>line: 121 ~ 152  <pre class="line-numbers language-cmake" data-language="cmake"><code class="language-cmake"><span class="token comment"># if(CMAKE_C_COMPILER_ID STREQUAL "MSVC")</span>
