@@ -1700,11 +1700,11 @@ async fn main() &#123;
 </ul>
 <p>build前需要准备的环境如下:</p>
 <ul>
-<li>msvc, <strong>visual studio installer</strong> 中勾选上 <strong>使用 C++ 的桌面开发</strong> 安装即可 (这里如果不适用 msvc, 改用 mingw 应该也可以, 但是我没有实践)</li>
+<li>msvc, <strong>「visual studio installer」</strong> 中勾选上 <strong>「使用 C++ 的桌面开发」</strong> 安装即可 (这里如果不适用 msvc, 改用 mingw 应该也可以, 但是我没有实践)</li>
 <li>cmake</li>
 </ul>
 <h2 id="构建"><a href="#构建" class="headerlink" title="构建"></a>构建</h2><ul>
-<li>git clone <a href="mailto:&#x67;&#105;&#x74;&#64;&#x67;&#x69;&#116;&#104;&#x75;&#x62;&#46;&#x63;&#x6f;&#109;">&#x67;&#105;&#x74;&#64;&#x67;&#x69;&#116;&#104;&#x75;&#x62;&#46;&#x63;&#x6f;&#109;</a>:c3lang&#x2F;c3c.git</li>
+<li>git clone <a href="mailto:&#x67;&#105;&#x74;&#x40;&#x67;&#x69;&#116;&#x68;&#117;&#x62;&#x2e;&#x63;&#x6f;&#x6d;">&#x67;&#105;&#x74;&#x40;&#x67;&#x69;&#116;&#x68;&#117;&#x62;&#x2e;&#x63;&#x6f;&#x6d;</a>:c3lang&#x2F;c3c.git</li>
 <li>cd c3c</li>
 <li>修改 <code>CMakeLists.txt</code><ul>
 <li>line: 121 ~ 152  <pre class="line-numbers language-cmake" data-language="cmake"><code class="language-cmake"><span class="token comment"># if(CMAKE_C_COMPILER_ID STREQUAL "MSVC")</span>
