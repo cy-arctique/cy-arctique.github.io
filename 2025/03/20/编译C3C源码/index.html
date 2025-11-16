@@ -15,7 +15,7 @@
 <meta property="og:description" content="前言关于 c3c 从源码构建, 遇到的一些坑: 当前 (2025-03-21) 根据 c3c 文档中介绍的从源码构建, 简单的几行命令就可以 build 出来编译器了, 但我在实际的操作中, 一直卡在 Loading Windows LLVM libraries, this may take a while..., 重试几次无果, 于是乎翻构建脚本看看 准备目标平台是 windows, 其他平台不">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2025-03-20T13:28:02.000Z">
-<meta property="article:modified_time" content="2025-08-24T14:16:43.271Z">
+<meta property="article:modified_time" content="2025-11-16T06:49:51.100Z">
 <meta property="article:author" content="Arctique">
 <meta property="article:tag" content="C3C">
 <meta property="article:tag" content="C3">
@@ -65,7 +65,7 @@
 
 <!-- Variable -->
 <script>window.ASYNC_CONFIG = {"hostname":"cy-arctique.github.io","author":"Arctique","root":"/","typed_text":["学习使人进化!"],"theme_version":"2.2.6","theme":{"switch":true,"default":"style-dark"},"favicon":{"logo":"assets/favicon.png","icon16":"assets/favicon.png","icon32":"assets/favicon.png","apple_touch_icon":"assets/favicon.png","webmanifest":null,"visibilitychange":true,"hidden":"assets/favicon.png","show_text":"(/≧▽≦/)咦！又好了！","hide_text":"(●—●)喔哟，崩溃啦！"},"i18n":{"placeholder":"搜索文章...","empty":"找不到您查询的内容: ${query}","hits":"找到 ${hits} 条结果","hits_time":"找到 ${hits} 条结果（用时 ${time} 毫秒）","author":"本文作者：","copyright_link":"本文链接：","copyright_license_title":"版权声明：","copyright_license_content":"本博客所有文章除特别声明外，均默认采用 undefined 许可协议。","copy_success":"复制成功","copy_failure":"复制失败","open_read_mode":"进入阅读模式","exit_read_mode":"退出阅读模式","notice_outdate_message":"距离上次更新已经 undefined 天了, 文章内容可能已经过时。","sticky":"置顶","just":"刚刚","min":"分钟前","hour":"小时前","day":"天前","month":"个月前"},"swup":false,"plugin":{"flickr_justified_gallery":"https://unpkg.com/flickr-justified-gallery@latest/dist/fjGallery.min.js"},"icons":{"sun":"far fa-sun","moon":"far fa-moon","play":"fas fa-play","email":"far fa-envelope","next":"fas fa-arrow-right","calendar":"far fa-calendar-alt","clock":"far fa-clock","user":"far fa-user","back_top":"fas fa-arrow-up","close":"fas fa-times","search":"fas fa-search","reward":"fas fa-hand-holding-usd","toc_tag":"fas fa-th-list","read":"fas fa-book-reader","arrows":"fas fa-arrows-alt-h","double_arrows":"fas fa-angle-double-down","copy":"fas fa-copy"},"icontype":"font","highlight":{"plugin":"prismjs","theme":true,"copy":true,"lang":false,"title":"default","height_limit":200},"toc":{"post_title":false},"live_time":{"start_time":"07/13/2023 00:00:00","prefix":"博客已萌萌哒运行 undefined 天"},"danmu":{"enable":true,"el":".trm-banner","avatar":true,"delayRange":5000,"speed":80},"creative_commons":{"license":"by-nc-sa","language":"deed.zh-hans"},"notice_outdate":{"enable":true,"style":"flat","limit_day":365,"position":"top"},"search":{"enable":true,"type":"local","href":"https://www.google.com/search?q=site:","domain":null,"path":"search.json"}};</script>
-<script id="async-page-config">window.PAGE_CONFIG = {"isPost":true,"isHome":false,"postUpdate":"2025-08-24 22:16:43"};</script>
+<script id="async-page-config">window.PAGE_CONFIG = {"isPost":true,"isHome":false,"postUpdate":"2025-11-16 14:49:51"};</script>
 
 <!-- Theme mode css -->
 <link data-swup-theme rel="stylesheet" href="/css/index.css?v=2.2.6" id="trm-switch-style">
@@ -356,13 +356,13 @@
     <div class="col-sm-4">
         <div class="trm-card trm-label trm-label-light text-center">
             <i class="iconfont far fa-calendar-alt trm-icon"></i><br>
-            2025-08-24
+            2025-11-16
         </div>
     </div>
     <div class="col-sm-4">
         <div class="trm-card trm-label trm-label-light text-center">
             <i class="iconfont far fa-clock trm-icon"></i><br>
-            22:16:43
+            14:49:51
         </div>
     </div>
     <div class="col-sm-4">
@@ -394,7 +394,7 @@
 <p>直接跳到 <a href="./%E7%BC%96%E8%AF%91C3C%E6%BA%90%E7%A0%81.md/#%E8%A1%A5%E5%85%85">补充</a> 段落修改编译脚本(简单省事), 然后再根据下面的命令执行步骤跑一遍就可以了</p>
 </blockquote>
 <ul>
-<li>git clone <a href="mailto:&#103;&#105;&#x74;&#x40;&#103;&#x69;&#116;&#104;&#117;&#98;&#x2e;&#x63;&#111;&#x6d;">&#103;&#105;&#x74;&#x40;&#103;&#x69;&#116;&#104;&#117;&#98;&#x2e;&#x63;&#111;&#x6d;</a>:c3lang&#x2F;c3c.git</li>
+<li>git clone <a href="mailto:&#x67;&#x69;&#x74;&#64;&#103;&#105;&#x74;&#104;&#x75;&#x62;&#46;&#x63;&#111;&#x6d;">&#x67;&#x69;&#x74;&#64;&#103;&#105;&#x74;&#104;&#x75;&#x62;&#46;&#x63;&#111;&#x6d;</a>:c3lang&#x2F;c3c.git</li>
 <li>cd c3c</li>
 <li>修改 <code>CMakeLists.txt</code><ul>
 <li>line: 121 ~ 152  <pre class="line-numbers language-cmake" data-language="cmake"><code class="language-cmake"><span class="token comment"># if(CMAKE_C_COMPILER_ID STREQUAL "MSVC")</span>
